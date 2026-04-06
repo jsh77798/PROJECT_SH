@@ -416,3 +416,22 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# =====================
+# DirectX / HLSL
+# =====================
+*.cso        # Compiled Shader Object
+*.fxc       # Shader compiler output (optional)
+
+# =====================
+# Runtime / Asset cache
+# =====================
+Assets/Cache/
+Assets/Temp/
+Assets/DerivedData/
+
+# Binary Files
+Binaries/*
+Portfolio04/Binaries/*
+Portfolio04/Intermediate/*
+

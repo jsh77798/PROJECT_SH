@@ -1,9 +1,11 @@
 #include "pch.h"
 #include "Player.h"
+#include "PlayerController.h"
 #include "MeshRenderer.h"
 #include "Transform.h"
 #include "Camera.h"
 #include "CameraScript.h"
+#include "Material.h"
 
 Player::Player()
 {
@@ -15,15 +17,35 @@ Player::~Player()
 
 void Player::Init()
 {
-	// Object
-	_obj = make_shared<GameObject>();
-	_obj->GetOrAddTransform()->SetPosition(Vec3{ 0.f, 0.f, 0.f });
-	_obj->AddComponent(make_shared<MeshRenderer>());
+	shared_ptr<Shader> _shader = make_shared<Shader>(L"23. RenderDemo.fx");
+
+	// Material
+	{
+		shared_ptr<Material> material = make_shared<Material>();
+		material->SetShader(_shader);
+		auto texture = RESOURCES->Load<Texture>(L"Veigar", L"..\\Resources\\Textures\\veigar.jpg");
+		material->SetDiffuseMap(texture);
+		MaterialDesc& desc = material->GetMaterialDesc();
+		desc.ambient = Vec4(1.f);
+		desc.diffuse = Vec4(1.f);
+		desc.specular = Vec4(1.f);
+		RESOURCES->Add(L"Veigar", material);
+	}
+
+	// CharacterMesh
+	auto cube = make_shared<GameObject>();
+	cube->GetOrAddTransform()->SetPosition(Vec3{ 0.0f, 0.0f, 0.0f });
+	cube->AddComponent(make_shared<MeshRenderer>());
+	cube->AddComponent(make_shared<PlayerController>());
 	{
 		auto mesh = RESOURCES->Get<Mesh>(L"Sphere");
-		_obj->GetMeshRenderer()->SetMesh(mesh);
+		cube->GetMeshRenderer()->SetMesh(mesh);
 	}
-	CUR_SCENE->Add(_obj);
+	{
+		cube->GetMeshRenderer()->SetMaterial(RESOURCES->Get<Material>(L"Veigar"));
+	}
+
+	CUR_SCENE->Add(cube);
 
 	// Camera
 	_camera = make_shared<GameObject>();

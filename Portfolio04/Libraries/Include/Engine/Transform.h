@@ -37,6 +37,21 @@ public:
 
 	Matrix GetWorldMatrix() { return _matWorld; }
 
+	//
+	Vec3 GetForward()
+	{
+		Vec3 forward = _matWorld.Backward();
+		forward.y = 0.f;
+		forward.Normalize();
+		return forward;
+	}
+
+	void Rotate(const Vec3& delta)
+	{
+		_localRotation += delta;
+		UpdateTransform();
+	}
+
 	// °èÃþ °ü°è
 	bool HasParent() { return _parent != nullptr; }
 

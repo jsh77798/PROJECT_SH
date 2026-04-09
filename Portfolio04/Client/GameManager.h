@@ -12,6 +12,6 @@ public:
     void Update();
 
 private:
-    shared_ptr <TownScene> Scene;
+    shared_ptr <Scene> Scene;
 };
 

@@ -26,7 +26,6 @@ void TownScene::Start()
     mPlayer = make_shared<Player>();
     mPlayer->Init();
 
-
     // ==========================
     // Light 생성
     // ==========================
@@ -39,7 +38,6 @@ void TownScene::Start()
     lightDesc.direction = Vec3(1.f, 0.f, 1.f);
     light->GetLight()->SetLightDesc(lightDesc);
     CUR_SCENE->Add(light);
-
 
     // Material
     {
@@ -69,21 +67,6 @@ void TownScene::Start()
         floor->GetMeshRenderer()->SetMaterial(RESOURCES->Get<Material>(L"Veigar"));
     }
     CUR_SCENE->Add(floor);
-
-    // ==========================
-    // 테스트용 큐브
-    // ==========================
-    auto cube = make_shared<GameObject>();
-    cube->GetOrAddTransform()->SetPosition(Vec3{ 3.0f, 0.0f, 3.0f });
-    cube->AddComponent(make_shared<MeshRenderer>());
-    {
-        auto mesh = RESOURCES->Get<Mesh>(L"Sphere");
-        cube->GetMeshRenderer()->SetMesh(mesh);
-    }
-    {
-        cube->GetMeshRenderer()->SetMaterial(RESOURCES->Get<Material>(L"Veigar"));
-    }
-    CUR_SCENE->Add(cube);
 }
 
 void TownScene::Update()

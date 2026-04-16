@@ -47,11 +47,15 @@ void Player::Init()
 
 	CUR_SCENE->Add(cube);
 
+	// CameraScript
+	auto camScript = make_shared<CameraScript>();
+	camScript->SetTarget(cube);
+
 	// Camera
 	_camera = make_shared<GameObject>();
 	_camera->GetOrAddTransform()->SetPosition(Vec3{ 0.f, 0.f, -5.f });
 	_camera->AddComponent(make_shared<Camera>());
-	_camera->AddComponent(make_shared<CameraScript>());
+	_camera->AddComponent(camScript);
 	_camera->GetCamera()->SetCullingMaskLayerOnOff(Layer_UI, true);
 	CUR_SCENE->Add(_camera);
 }

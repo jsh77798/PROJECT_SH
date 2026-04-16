@@ -52,6 +52,8 @@ public:
 		UpdateTransform();
 	}
 
+	void LookAt(const Vec3& target);
+
 	// °èÃþ °ü°è
 	bool HasParent() { return _parent != nullptr; }
 

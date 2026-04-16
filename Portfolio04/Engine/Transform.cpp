@@ -117,3 +117,15 @@ void Transform::SetPosition(const Vec3& worldPosition)
 		SetLocalPosition(worldPosition);
 	}
 }
+
+void Transform::LookAt(const Vec3& target)
+{
+	Vec3 dir = target - GetPosition();
+
+	dir.y = 0.f;   
+	dir.Normalize();
+
+	float yaw = atan2f(dir.x, dir.z);
+
+	SetRotation(Vec3(0.f, yaw, 0.f));
+}

@@ -7,6 +7,6 @@ public:
     virtual void Update() override;
 
 private:
-    float _moveSpeed = 5.0f;
+    float _moveSpeed = 2.0f;
     float _rotSpeed = 2.5f;
 };

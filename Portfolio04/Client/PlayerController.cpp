@@ -12,10 +12,10 @@ void PlayerController::Update()
 
 	// ÀÌµ¿
     if (INPUT->GetButton(KEY_TYPE::W))
-        pos += GetTransform()->GetLook() * _moveSpeed * dt;
+        pos += GetTransform()->GetForward() * _moveSpeed * dt;
 
     if (INPUT->GetButton(KEY_TYPE::S))
-        pos -= GetTransform()->GetLook() * _moveSpeed * dt;
+        pos -= GetTransform()->GetForward() * _moveSpeed * dt;
 
     //if (INPUT->GetButton(KEY_TYPE::A))
     //    pos -= GetTransform()->GetRight() * _moveSpeed * dt;

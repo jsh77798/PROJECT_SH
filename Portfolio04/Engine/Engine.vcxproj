@@ -153,6 +153,8 @@ xcopy /Y "$(SolutionDir)Engine\*.inl" "$(SolutionDir)Libraries\Include\Engine"</
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="AABBBoxCollider.h" />
+    <ClInclude Include="AssetImporter.h" />
+    <ClInclude Include="AsTypes.h" />
     <ClInclude Include="BaseCollider.h" />
     <ClInclude Include="Billboard.h" />
     <ClInclude Include="BindShaderDesc.h" />
@@ -160,6 +162,7 @@ xcopy /Y "$(SolutionDir)Engine\*.inl" "$(SolutionDir)Libraries\Include\Engine"</
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Component.h" />
     <ClInclude Include="ConstantBuffer.h" />
+    <ClInclude Include="Converter.h" />
     <ClInclude Include="Define.h" />
     <ClInclude Include="EnginePch.h" />
     <ClInclude Include="FileUtils.h" />
@@ -223,6 +226,8 @@ xcopy /Y "$(SolutionDir)Engine\*.inl" "$(SolutionDir)Libraries\Include\Engine"</
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AABBBoxCollider.cpp" />
+    <ClCompile Include="AssetImporter.cpp" />
+    <ClCompile Include="AsTypes.cpp" />
     <ClCompile Include="BaseCollider.cpp" />
     <ClCompile Include="Billboard.cpp" />
     <ClCompile Include="BindShaderDesc.cpp" />
@@ -230,6 +235,7 @@ xcopy /Y "$(SolutionDir)Engine\*.inl" "$(SolutionDir)Libraries\Include\Engine"</
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Component.cpp" />
     <ClCompile Include="ConstantBuffer.cpp" />
+    <ClCompile Include="Converter.cpp" />
     <ClCompile Include="FileUtils.cpp" />
     <ClCompile Include="Frustum.cpp" />
     <ClCompile Include="Game.cpp" />

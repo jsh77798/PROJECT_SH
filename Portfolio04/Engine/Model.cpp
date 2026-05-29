@@ -7,6 +7,7 @@
 #include "Material.h"
 #include "ModelMesh.h"
 #include "ModelAnimation.h"
+#include "Converter.h"
 
 Model::Model()
 {
@@ -205,7 +206,7 @@ void Model::ReadModel(wstring filename)
 	BindCacheInfo();
 }
 
-void Model::ReadAnimation(wstring filename)
+shared_ptr<ModelAnimation> Model::ReadAnimation(wstring filename)
 {
 	wstring fullPath = _modelPath + filename + L".clip";
 
@@ -214,6 +215,7 @@ void Model::ReadAnimation(wstring filename)
 
 	shared_ptr<ModelAnimation> animation = make_shared<ModelAnimation>();
 
+	animation->filePath = _modelPath + filename + L".clip";
 	animation->name = Utils::ToWString(file->Read<string>());
 	animation->duration = file->Read<float>();
 	animation->frameRate = file->Read<float>();
@@ -239,6 +241,7 @@ void Model::ReadAnimation(wstring filename)
 	}
 
 	_animations.push_back(animation);
+	return animation;
 }
 
 std::shared_ptr<Material> Model::GetMaterialByName(const wstring& name)
@@ -279,6 +282,17 @@ std::shared_ptr<ModelAnimation> Model::GetAnimationByName(wstring name)
 	for (auto& animation : _animations)
 	{
 		if (animation->name == name)
+			return animation;
+	}
+
+	return nullptr;
+}
+
+std::shared_ptr<ModelAnimation> Model::GetAnimationByFile(wstring filePath)
+{
+	for (auto& animation : _animations)
+	{
+		if (animation->filePath == filePath)
 			return animation;
 	}
 

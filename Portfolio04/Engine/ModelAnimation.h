@@ -18,6 +18,7 @@ struct ModelAnimation
 {
 	shared_ptr<ModelKeyframe> GetKeyframe(const wstring& name);
 
+	wstring filePath;
 	wstring name;
 	float duration = 0.f;
 	float frameRate = 0.f;

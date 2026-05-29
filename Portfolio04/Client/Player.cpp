@@ -1,4 +1,5 @@
 #include "pch.h"
+#include <map>
 #include "Player.h"
 #include "PlayerController.h"
 #include "MeshRenderer.h"
@@ -6,9 +7,14 @@
 #include "Camera.h"
 #include "CameraScript.h"
 #include "Material.h"
+#include "Model.h"
+#include "ModelAnimator.h"
+#include "AssetImporter.h"
 
 Player::Player()
 {
+	map<State, shared_ptr<ModelAnimation>> Anim;
+
 }
 
 Player::~Player()
@@ -17,7 +23,7 @@ Player::~Player()
 
 void Player::Init()
 {
-	shared_ptr<Shader> _shader = make_shared<Shader>(L"23. RenderDemo.fx");
+	shared_ptr<Shader> _shader = make_shared<Shader>(L"SkinnedLit.fx");
 
 	// Material
 	{
@@ -32,24 +38,30 @@ void Player::Init()
 		RESOURCES->Add(L"Veigar", material);
 	}
 
-	// CharacterMesh
-	auto cube = make_shared<GameObject>();
-	cube->GetOrAddTransform()->SetPosition(Vec3{ 0.0f, 0.0f, 0.0f });
-	cube->AddComponent(make_shared<MeshRenderer>());
-	cube->AddComponent(make_shared<PlayerController>());
-	{
-		auto mesh = RESOURCES->Get<Mesh>(L"Sphere");
-		cube->GetMeshRenderer()->SetMesh(mesh);
-	}
-	{
-		cube->GetMeshRenderer()->SetMaterial(RESOURCES->Get<Material>(L"Veigar"));
-	}
+	// Model
+	shared_ptr<class Model> model = make_shared<Model>();
+	model->ReadModel(L"Kachujin/Kachujin");
+	model->ReadMaterial(L"Kachujin/Kachujin");
 
-	CUR_SCENE->Add(cube);
+	// Animation
+	anim[State::Idle] = ASSIMP->AnimImporter(L"Kachujin/Idle.fbx");
+	
+	// CharacterMesh
+	auto obj = make_shared<GameObject>();
+	obj->GetOrAddTransform()->SetPosition(Vec3{ 0.0f, 0.0f, 0.0f });
+	obj->GetOrAddTransform()->SetScale(Vec3(0.01f));
+	obj->AddComponent(make_shared<ModelAnimator>(_shader));
+	//obj->AddComponent(make_shared<MeshRenderer>());
+	obj->AddComponent(make_shared<PlayerController>());
+	{
+		//auto mesh = RESOURCES->Get<Mesh>(L"Sphere");
+		//obj->GetMeshRenderer()->SetMesh(mesh);
+		obj->GetModelAnimator()->SetModel(model);
+	}
 
 	// CameraScript
 	auto camScript = make_shared<CameraScript>();
-	camScript->SetTarget(cube);
+	camScript->SetTarget(obj);
 
 	// Camera
 	_camera = make_shared<GameObject>();
@@ -57,6 +69,9 @@ void Player::Init()
 	_camera->AddComponent(make_shared<Camera>());
 	_camera->AddComponent(camScript);
 	_camera->GetCamera()->SetCullingMaskLayerOnOff(Layer_UI, true);
+
+
+	CUR_SCENE->Add(obj);
 	CUR_SCENE->Add(_camera);
 }
 

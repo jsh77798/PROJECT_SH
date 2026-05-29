@@ -246,6 +246,15 @@
     <ClCompile Include="Primitive3D.cpp">
       <Filter>99. Headers\Math</Filter>
     </ClCompile>
+    <ClCompile Include="Converter.cpp">
+      <Filter>98. Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="AsTypes.cpp">
+      <Filter>98. Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="AssetImporter.cpp">
+      <Filter>00. Engine\Resource</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -451,6 +460,15 @@
     </ClInclude>
     <ClInclude Include="Types.h">
       <Filter>99. Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Converter.h">
+      <Filter>98. Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="AsTypes.h">
+      <Filter>98. Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="AssetImporter.h">
+      <Filter>00. Engine\Resource</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

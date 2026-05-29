@@ -17,7 +17,7 @@ void CameraScript::Update()
 	{
 		Vec3 targetPos = _target->GetTransform()->GetPosition();  
 
-		Vec3 forward = _target->GetTransform()->GetLook();
+		Vec3 forward = _target->GetTransform()->GetForward();
 
 		Vec3 desiredPos = targetPos - forward * _offset;
 

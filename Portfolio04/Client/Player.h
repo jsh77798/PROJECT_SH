@@ -1,5 +1,13 @@
 #pragma once
 #include "GameObject.h"
+#include "ModelAnimation.h"
+
+enum class State : uint8
+{
+    Idle,
+    Move,
+    Attack,
+};
 
 class Player : public GameObject
 {
@@ -14,5 +22,6 @@ public:
 private:
     shared_ptr<GameObject> _obj;
     shared_ptr<GameObject> _camera;
+    map<State, shared_ptr<ModelAnimation>> anim;
 };
 

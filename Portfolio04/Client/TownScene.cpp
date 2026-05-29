@@ -18,7 +18,7 @@ TownScene::~TownScene()
 
 void TownScene::Start()
 {
-    _shader = make_shared<Shader>(L"23. RenderDemo.fx");
+    _shader = make_shared<Shader>(L"SkinnedLit.fx");
 
     // ==========================
     // Player »ý¼º

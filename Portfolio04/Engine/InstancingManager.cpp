@@ -134,7 +134,7 @@ void InstancingManager::RenderAnimRenderer(vector<shared_ptr<GameObject>>& gameO
 				AddData(instanceId, data);
 
 				// INSTANCING
-				gameObject->GetModelAnimator()->UpdateTweenData();
+				//gameObject->GetModelAnimator()->UpdateTweenData();
 				tweenDesc->tweens[i] = gameObject->GetModelAnimator()->GetTweenDesc();
 			}
 

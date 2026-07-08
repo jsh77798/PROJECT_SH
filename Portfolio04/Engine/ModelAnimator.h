@@ -30,6 +30,8 @@ public:
 	InstanceID GetInstanceID();
 	TweenDesc& GetTweenDesc() { return _tweenDesc; }
 
+	void Play(int animIndex/*, float blendTime = 0.2f*/);
+
 private:
 	void CreateTexture();
 	void CreateAnimationTransform(uint32 index);

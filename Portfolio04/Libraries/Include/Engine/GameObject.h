@@ -25,6 +25,13 @@ public:
 	void LateUpdate();
 	void FixedUpdate();
 
+	void AddChild(shared_ptr<GameObject> child);
+
+	void SetParent(shared_ptr<GameObject> parent);
+	shared_ptr<GameObject> GetParent() { return _parent.lock(); }
+
+	const vector<shared_ptr<GameObject>>& GetChildren() { return _children; }
+
 	shared_ptr<Component> GetFixedComponent(ComponentType type);
 	shared_ptr<Transform> GetTransform();
 	shared_ptr<Camera> GetCamera();
@@ -43,6 +50,10 @@ public:
 
 	void SetLayerIndex(uint8 layer) { _layerIndex = layer; }
 	uint8 GetLayerIndex() { return _layerIndex; }
+
+private:
+	weak_ptr<GameObject> _parent;
+	vector<shared_ptr<GameObject>> _children;
 
 protected:
 	array<shared_ptr<Component>, FIXED_COMPONENT_COUNT> _components;

@@ -206,7 +206,7 @@ void Model::ReadModel(wstring filename)
 	BindCacheInfo();
 }
 
-shared_ptr<ModelAnimation> Model::ReadAnimation(wstring filename)
+void Model::ReadAnimation(wstring filename)
 {
 	wstring fullPath = _modelPath + filename + L".clip";
 
@@ -240,8 +240,8 @@ shared_ptr<ModelAnimation> Model::ReadAnimation(wstring filename)
 		animation->keyframes[keyframe->boneName] = keyframe;
 	}
 
+	_stateAnimations[filename] = static_cast<int32>(_animations.size());
 	_animations.push_back(animation);
-	return animation;
 }
 
 std::shared_ptr<Material> Model::GetMaterialByName(const wstring& name)
@@ -297,6 +297,13 @@ std::shared_ptr<ModelAnimation> Model::GetAnimationByFile(wstring filePath)
 	}
 
 	return nullptr;
+}
+
+int32 Model::FindAnimation(wstring filename)
+{
+	auto iter = _stateAnimations.find(filename);
+
+	return (iter != _stateAnimations.end()) ? iter->second : -1;
 }
 
 void Model::BindCacheInfo()

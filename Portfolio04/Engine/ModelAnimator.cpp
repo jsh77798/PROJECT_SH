@@ -33,7 +33,7 @@ void ModelAnimator::SetModel(shared_ptr<Model> model)
 
 void ModelAnimator::Update()
 {
-
+	UpdateTweenData();
 }
 
 void ModelAnimator::UpdateTweenData()
@@ -58,37 +58,37 @@ void ModelAnimator::UpdateTweenData()
 		}
 	}
 
-	// 다음 애니메이션이 예약 되어 있다면
-	//if (desc.next.animIndex >= 0)
-	//{
-	//	desc.tweenSumTime += DT;
-	//	desc.tweenRatio = desc.tweenSumTime / desc.tweenDuration;
-	//
-	//	if (desc.tweenRatio >= 1.f)
-	//	{
-	//		// 애니메이션 교체 성공
-	//		desc.curr = desc.next;
-	//		desc.ClearNextAnim();
-	//	}
-	//	else
-	//	{
-	//		// 교체중
-	//		shared_ptr<ModelAnimation> nextAnim = _model->GetAnimationByIndex(desc.next.animIndex);
-	//		desc.next.sumTime += DT;
-	//
-	//		float timePerFrame = 1.f / (nextAnim->frameRate * desc.next.speed);
-	//
-	//		if (desc.next.ratio >= 1.f)
-	//		{
-	//			desc.next.sumTime = 0;
-	//
-	//			desc.next.currFrame = (desc.next.currFrame + 1) % nextAnim->frameCount;
-	//			desc.next.nextFrame = (desc.next.currFrame + 1) % nextAnim->frameCount;
-	//		}
-	//
-	//		desc.next.ratio = desc.next.sumTime / timePerFrame;
-	//	}
-	//}
+	 //다음 애니메이션이 예약 되어 있다면
+	if (desc.next.animIndex >= 0)
+	{
+		desc.tweenSumTime += DT;
+		desc.tweenRatio = desc.tweenSumTime / desc.tweenDuration;
+	
+		if (desc.tweenRatio >= 1.f)
+		{
+			// 애니메이션 교체 성공
+			desc.curr = desc.next;
+			desc.ClearNextAnim();
+		}
+		else
+		{
+			// 교체중
+			shared_ptr<ModelAnimation> nextAnim = _model->GetAnimationByIndex(desc.next.animIndex);
+			desc.next.sumTime += DT;
+	
+			float timePerFrame = 1.f / (nextAnim->frameRate * desc.next.speed);
+	
+			if (desc.next.ratio >= 1.f)
+			{
+				desc.next.sumTime = 0;
+	
+				desc.next.currFrame = (desc.next.currFrame + 1) % nextAnim->frameCount;
+				desc.next.nextFrame = (desc.next.currFrame + 1) % nextAnim->frameCount;
+			}
+	
+			desc.next.ratio = desc.next.sumTime / timePerFrame;
+		}
+	}
 }
 
 void ModelAnimator::RenderInstancing(shared_ptr<class InstancingBuffer>& buffer)
@@ -141,6 +141,22 @@ void ModelAnimator::RenderInstancing(shared_ptr<class InstancingBuffer>& buffer)
 InstanceID ModelAnimator::GetInstanceID()
 {
 	return make_pair((uint64)_model.get(), (uint64)_shader.get());
+}
+
+void ModelAnimator::Play(int32 animIndex/*, float blendTime = 0.2f*/)
+{
+	if (_tweenDesc.curr.animIndex == animIndex)
+		return;
+
+	_tweenDesc.next.animIndex = animIndex;
+	//_tweenDesc.next.currFrame = 0;
+	//_tweenDesc.next.nextFrame = 1;
+	//_tweenDesc.next.sumTime = 0;
+	//_tweenDesc.next.speed = 1.f;
+	
+	_tweenDesc.tweenDuration = 0.2f;// blendTime;
+	//_tweenDesc.tweenSumTime = 0;
+	//_tweenDesc.tweenRatio = 0.f;
 }
 
 void ModelAnimator::CreateTexture()

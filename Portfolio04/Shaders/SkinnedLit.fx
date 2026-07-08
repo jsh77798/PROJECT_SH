@@ -28,7 +28,8 @@ struct TweenFrameDesc
 
 cbuffer TweenBuffer
 {
-    TweenFrameDesc TweenFrames[MAX_MODEL_INSTANCE];
+    TweenFrameDesc TweenFrames;
+    //TweenFrameDesc TweenFrames[MAX_MODEL_INSTANCE];
 };
 
 cbuffer BoneBuffer
@@ -70,15 +71,15 @@ matrix GetAnimationMatrix(VS_IN input)
     int nextFrame[2];
     float ratio[2];
 
-    animIndex[0] = TweenFrames[input.instanceID].curr.animIndex;
-    currFrame[0] = TweenFrames[input.instanceID].curr.currFrame;
-    nextFrame[0] = TweenFrames[input.instanceID].curr.nextFrame;
-    ratio[0] = TweenFrames[input.instanceID].curr.ratio;
+    animIndex[0] = TweenFrames.curr.animIndex;
+    currFrame[0] = TweenFrames.curr.currFrame;
+    nextFrame[0] = TweenFrames.curr.nextFrame;
+    ratio[0] = TweenFrames.curr.ratio;
 
-    animIndex[1] = TweenFrames[input.instanceID].next.animIndex;
-    currFrame[1] = TweenFrames[input.instanceID].next.currFrame;
-    nextFrame[1] = TweenFrames[input.instanceID].next.nextFrame;
-    ratio[1] = TweenFrames[input.instanceID].next.ratio;
+    animIndex[1] = TweenFrames.next.animIndex;
+    currFrame[1] = TweenFrames.next.currFrame;
+    nextFrame[1] = TweenFrames.next.nextFrame;
+    ratio[1] = TweenFrames.next.ratio;
 
     float4 c0, c1, c2, c3;
     float4 n0, n1, n2, n3;
@@ -87,21 +88,43 @@ matrix GetAnimationMatrix(VS_IN input)
     matrix transform = 0;
 
     
-    c0 = TransformMap.Load(int4(indices[0] * 4 + 0, currFrame[0], animIndex[0], 0));
-    c1 = TransformMap.Load(int4(indices[0] * 4 + 1, currFrame[0], animIndex[0], 0));
-    c2 = TransformMap.Load(int4(indices[0] * 4 + 2, currFrame[0], animIndex[0], 0));
-    c3 = TransformMap.Load(int4(indices[0] * 4 + 3, currFrame[0], animIndex[0], 0));
-    curr = matrix(c0, c1, c2, c3);
+    for (int i = 0; i < 4; i++)
+    {
+        c0 = TransformMap.Load(int4(indices[i] * 4 + 0, currFrame[0], animIndex[0], 0));
+        c1 = TransformMap.Load(int4(indices[i] * 4 + 1, currFrame[0], animIndex[0], 0));
+        c2 = TransformMap.Load(int4(indices[i] * 4 + 2, currFrame[0], animIndex[0], 0));
+        c3 = TransformMap.Load(int4(indices[i] * 4 + 3, currFrame[0], animIndex[0], 0));
+        curr = matrix(c0, c1, c2, c3);
 
-    n0 = TransformMap.Load(int4(indices[0] * 4 + 0, nextFrame[0], animIndex[0], 0));
-    n1 = TransformMap.Load(int4(indices[0] * 4 + 1, nextFrame[0], animIndex[0], 0));
-    n2 = TransformMap.Load(int4(indices[0] * 4 + 2, nextFrame[0], animIndex[0], 0));
-    n3 = TransformMap.Load(int4(indices[0] * 4 + 3, nextFrame[0], animIndex[0], 0));
-    next = matrix(n0, n1, n2, n3);
+        n0 = TransformMap.Load(int4(indices[i] * 4 + 0, nextFrame[0], animIndex[0], 0));
+        n1 = TransformMap.Load(int4(indices[i] * 4 + 1, nextFrame[0], animIndex[0], 0));
+        n2 = TransformMap.Load(int4(indices[i] * 4 + 2, nextFrame[0], animIndex[0], 0));
+        n3 = TransformMap.Load(int4(indices[i] * 4 + 3, nextFrame[0], animIndex[0], 0));
+        next = matrix(n0, n1, n2, n3);
 
-    matrix result = lerp(curr, next, ratio[0]);
+        matrix result = lerp(curr, next, ratio[0]);
 
-    transform += mul(weights[0], result);
+		// 다음 애니메이션
+        if (animIndex[1] >= 0)
+        {
+            c0 = TransformMap.Load(int4(indices[i] * 4 + 0, currFrame[1], animIndex[1], 0));
+            c1 = TransformMap.Load(int4(indices[i] * 4 + 1, currFrame[1], animIndex[1], 0));
+            c2 = TransformMap.Load(int4(indices[i] * 4 + 2, currFrame[1], animIndex[1], 0));
+            c3 = TransformMap.Load(int4(indices[i] * 4 + 3, currFrame[1], animIndex[1], 0));
+            curr = matrix(c0, c1, c2, c3);
+
+            n0 = TransformMap.Load(int4(indices[i] * 4 + 0, nextFrame[1], animIndex[1], 0));
+            n1 = TransformMap.Load(int4(indices[i] * 4 + 1, nextFrame[1], animIndex[1], 0));
+            n2 = TransformMap.Load(int4(indices[i] * 4 + 2, nextFrame[1], animIndex[1], 0));
+            n3 = TransformMap.Load(int4(indices[i] * 4 + 3, nextFrame[1], animIndex[1], 0));
+            next = matrix(n0, n1, n2, n3);
+
+            matrix nextResult = lerp(curr, next, ratio[1]);
+            result = lerp(result, nextResult, TweenFrames.tweenRatio);
+        }
+
+        transform += mul(weights[i], result);
+    }
     
     return transform;
 }

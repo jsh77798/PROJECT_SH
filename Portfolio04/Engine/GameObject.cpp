@@ -93,6 +93,35 @@ void GameObject::FixedUpdate()
 	}
 }
 
+void GameObject::AddChild(shared_ptr<GameObject> child)
+{
+	child->SetParent(shared_from_this());
+
+	GetTransform()->AddChild(child->GetTransform());
+}
+
+void GameObject::SetParent(shared_ptr<GameObject> parent)
+{
+	if (auto prev = _parent.lock())
+	{
+		auto& siblings = prev->_children;
+		siblings.erase(remove(siblings.begin(), siblings.end(), shared_from_this()), siblings.end());
+	}
+
+	_parent = parent;
+
+	if (parent)
+	{
+		parent->_children.push_back(shared_from_this());
+
+		GetTransform()->SetParent(parent->GetTransform());
+	}
+	else
+	{
+		GetTransform()->SetParent(nullptr);
+	}
+}
+
 std::shared_ptr<Component> GameObject::GetFixedComponent(ComponentType type)
 {
 	uint8 index = static_cast<uint8>(type);

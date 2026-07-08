@@ -11,8 +11,8 @@ class AssetImporter
 	DECLARE_SINGLE(AssetImporter);
 
 public:
-	void MeshImporter(wstring file);
-	shared_ptr<ModelAnimation> AnimImporter(wstring file);
+	wstring MeshImporter(wstring file);
+	wstring AnimImporter(wstring file);
 
 private:
 	wstring _modelPath = L"../Resources/Models/";

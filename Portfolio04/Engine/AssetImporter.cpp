@@ -8,19 +8,50 @@
 #include "Model.h"
 #include "Material.h"
 
-void AssetImporter::MeshImporter(wstring file)
+wstring AssetImporter::MeshImporter(wstring file)
 {
-}
+	wstring converterFile = file;
 
-shared_ptr<ModelAnimation> AssetImporter::AnimImporter(wstring file)
-{
-	wstring converterFile;
-
-	size_t pos = file.rfind(L'.');
+	size_t pos = converterFile.rfind(L'/');
 
 	if (pos != std::wstring::npos)
 	{
-		converterFile = file.erase(pos);
+		converterFile.erase(pos);
+	}
+
+	// Importer
+	shared_ptr<class Model> model = make_shared<Model>();
+
+	if (!filesystem::exists(_modelPath + converterFile + L".mesh"))
+	{
+		shared_ptr<Converter> converter = make_shared<Converter>();
+
+		converter->ReadAssetFile(file);
+
+		converter->ExportModelData(converterFile);
+	}
+
+	if (!filesystem::exists(_texturePath + converterFile + L".xml"))
+	{
+		shared_ptr<Converter> converter = make_shared<Converter>();
+
+		converter->ReadAssetFile(file);
+
+		converter->ExportMaterialData(converterFile);
+	}
+	
+	return converterFile;
+}
+
+wstring AssetImporter::AnimImporter(wstring file)
+{
+	wstring converterFile = file;
+
+	size_t pos = converterFile.rfind(L'.');
+
+	if (pos != std::wstring::npos)
+	{
+		converterFile.erase(pos);
 	}
 
 	// Importer
@@ -33,9 +64,7 @@ shared_ptr<ModelAnimation> AssetImporter::AnimImporter(wstring file)
 		converter->ReadAssetFile(file);
 
 		converter->ExportAnimationData(converterFile);
-
-	    return model->ReadAnimation(converterFile);
 	}
 
-	return model->ReadAnimation(converterFile);
+	return converterFile;
 }

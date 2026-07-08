@@ -13,7 +13,7 @@ public:
 public:
 	void ReadMaterial(wstring filename);
 	void ReadModel(wstring filename);
-	shared_ptr<ModelAnimation> ReadAnimation(wstring filename);
+	void ReadAnimation(wstring filename);
 
 	uint32 GetMaterialCount() { return static_cast<uint32>(_materials.size()); }
 	vector<shared_ptr<Material>>& GetMaterials() { return _materials; }
@@ -36,6 +36,8 @@ public:
 	shared_ptr<ModelAnimation> GetAnimationByName(wstring name);
 	shared_ptr<ModelAnimation> GetAnimationByFile(wstring filePath);
 
+	int32 FindAnimation(wstring filename);
+
 private:
 	void BindCacheInfo();
 
@@ -49,5 +51,6 @@ private:
 	vector<shared_ptr<ModelBone>> _bones;
 	vector<shared_ptr<ModelMesh>> _meshes;
 	vector<shared_ptr<ModelAnimation>> _animations;
+	map<wstring, int32> _stateAnimations;
 };
 

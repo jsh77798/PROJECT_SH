@@ -54,6 +54,7 @@ void Transform::UpdateTransform()
 	if (HasParent())
 	{
 		_matWorld = _matLocal * _parent->GetWorldMatrix();
+		//_matWorld = _parent->GetWorldMatrix() * _matLocal;
 	}
 	else
 	{

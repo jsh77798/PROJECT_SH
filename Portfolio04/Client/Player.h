@@ -2,7 +2,7 @@
 #include "GameObject.h"
 #include "ModelAnimation.h"
 
-enum class State : uint8
+enum class PlayerState : uint8
 {
     Idle,
     Move,
@@ -19,9 +19,17 @@ public:
     void Init();
     void Update();
 
+    void ChangeState(PlayerState state);
+
+	void Move();
+    void Stop();
+
 private:
+    shared_ptr<GameObject> _playerObject;
+    shared_ptr<GameObject> _modelObject;
     shared_ptr<GameObject> _obj;
     shared_ptr<GameObject> _camera;
-    map<State, shared_ptr<ModelAnimation>> anim;
+    unordered_map<PlayerState, int32> _animMap;
+    PlayerState _state;
 };
 

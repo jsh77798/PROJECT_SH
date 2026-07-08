@@ -2,6 +2,12 @@
 #include "PlayerController.h"
 #include "Transform.h"
 
+void PlayerController::Awake()
+{
+	//_player = static_pointer_cast<Player>(GetGameObject());
+    _animator = GetGameObject()->GetModelAnimator();
+}
+
 void PlayerController::Update()
 {
     printf("PlayerController Update\n");
@@ -10,12 +16,19 @@ void PlayerController::Update()
 
     Vec3 pos = GetTransform()->GetPosition();
 
-	// 이동
-    if (INPUT->GetButton(KEY_TYPE::W))
-        pos += GetTransform()->GetForward() * _moveSpeed * dt;
+    bool isMoving = false;
 
-    if (INPUT->GetButton(KEY_TYPE::S))
+	// 이동
+    if (INPUT->GetButton(KEY_TYPE::W)) 
+    {
+        pos += GetTransform()->GetForward() * _moveSpeed * dt;
+        isMoving = true;
+    }
+     
+    if (INPUT->GetButton(KEY_TYPE::S)) {
         pos -= GetTransform()->GetForward() * _moveSpeed * dt;
+		isMoving = true;
+    }
 
     //if (INPUT->GetButton(KEY_TYPE::A))
     //    pos -= GetTransform()->GetRight() * _moveSpeed * dt;
@@ -38,5 +51,17 @@ void PlayerController::Update()
         Vec3 rotation = GetTransform()->GetLocalRotation();
         rotation.y += _rotSpeed * dt;
         GetTransform()->SetLocalRotation(rotation);
+    }
+
+    // =========================
+    //  애니메이션 처리
+    // =========================
+    if (isMoving) 
+    {
+		_player->Move();
+    }
+    else 
+    {
+        _player->Stop();
     }
 }

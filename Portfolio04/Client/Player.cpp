@@ -13,8 +13,6 @@
 
 Player::Player()
 {
-	map<State, shared_ptr<ModelAnimation>> Anim;
-
 }
 
 Player::~Player()
@@ -25,43 +23,40 @@ void Player::Init()
 {
 	shared_ptr<Shader> _shader = make_shared<Shader>(L"SkinnedLit.fx");
 
-	// Material
-	{
-		shared_ptr<Material> material = make_shared<Material>();
-		material->SetShader(_shader);
-		auto texture = RESOURCES->Load<Texture>(L"Veigar", L"..\\Resources\\Textures\\veigar.jpg");
-		material->SetDiffuseMap(texture);
-		MaterialDesc& desc = material->GetMaterialDesc();
-		desc.ambient = Vec4(1.f);
-		desc.diffuse = Vec4(1.f);
-		desc.specular = Vec4(1.f);
-		RESOURCES->Add(L"Veigar", material);
-	}
-
-	// Model
+	// Model (Mesh + Material)
 	shared_ptr<class Model> model = make_shared<Model>();
-	model->ReadModel(L"Kachujin/Kachujin");
-	model->ReadMaterial(L"Kachujin/Kachujin");
+	model->ReadModel(ASSIMP->MeshImporter(L"Kachujin/Mesh.fbx"));
+	model->ReadMaterial(ASSIMP->MeshImporter(L"Kachujin/Mesh.fbx"));
 
 	// Animation
-	anim[State::Idle] = ASSIMP->AnimImporter(L"Kachujin/Idle.fbx");
+	model->ReadAnimation(ASSIMP->AnimImporter(L"Kachujin/Idle.fbx"));
+	model->ReadAnimation(ASSIMP->AnimImporter(L"Kachujin/Run.fbx"));
+
+	_animMap[PlayerState::Idle] = model->FindAnimation(L"Kachujin/Idle");
+	_animMap[PlayerState::Move] = model->FindAnimation(L"Kachujin/Run");
+
+	// PlayerController
+	auto playerController = make_shared<PlayerController>();
+	playerController->SetPlayer(this);
+
+	// PlayerObject
+	_playerObject = make_shared<GameObject>();
+	_playerObject->GetOrAddTransform()->SetPosition(Vec3{ 0.0f, 0.0f, 0.0f });
+	_playerObject->AddComponent(playerController);
+
+	// ModelObject
+	_modelObject = make_shared<GameObject>();
+	_modelObject->GetOrAddTransform()->SetScale(Vec3(0.01f));
+	_modelObject->GetOrAddTransform()->SetRotation(Vec3{ 0.0f, XM_PI, 0.0f });
+	_modelObject->AddComponent(make_shared<ModelAnimator>(_shader));
+	_modelObject->GetModelAnimator()->SetModel(model);
 	
-	// CharacterMesh
-	auto obj = make_shared<GameObject>();
-	obj->GetOrAddTransform()->SetPosition(Vec3{ 0.0f, 0.0f, 0.0f });
-	obj->GetOrAddTransform()->SetScale(Vec3(0.01f));
-	obj->AddComponent(make_shared<ModelAnimator>(_shader));
-	//obj->AddComponent(make_shared<MeshRenderer>());
-	obj->AddComponent(make_shared<PlayerController>());
-	{
-		//auto mesh = RESOURCES->Get<Mesh>(L"Sphere");
-		//obj->GetMeshRenderer()->SetMesh(mesh);
-		obj->GetModelAnimator()->SetModel(model);
-	}
+	// Add ModelObject as a child of PlayerObject
+	_playerObject->AddChild(_modelObject);
 
 	// CameraScript
 	auto camScript = make_shared<CameraScript>();
-	camScript->SetTarget(obj);
+	camScript->SetTarget(_playerObject);
 
 	// Camera
 	_camera = make_shared<GameObject>();
@@ -71,7 +66,8 @@ void Player::Init()
 	_camera->GetCamera()->SetCullingMaskLayerOnOff(Layer_UI, true);
 
 
-	CUR_SCENE->Add(obj);
+	CUR_SCENE->Add(_playerObject);
+	CUR_SCENE->Add(_modelObject);
 	CUR_SCENE->Add(_camera);
 }
 
@@ -79,3 +75,32 @@ void Player::Update()
 {
     GameObject::Update();
 }
+
+void Player::ChangeState(PlayerState state)
+{
+	if (_state == state)
+		return;
+
+	_state = state;
+
+	if (_modelObject) {
+
+		auto animator = _modelObject->GetModelAnimator();
+
+		if (animator) {
+			animator->Play(_animMap[state]);
+		}
+	}
+}
+
+void Player::Move()
+{
+	ChangeState(PlayerState::Move);
+
+}
+
+void Player::Stop()
+{
+	ChangeState(PlayerState::Idle);
+}
+

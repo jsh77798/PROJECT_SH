@@ -1,4 +1,5 @@
 #pragma once
+#include "Character.h"
 #include "GameObject.h"
 #include "ModelAnimation.h"
 
@@ -9,15 +10,15 @@ enum class PlayerState : uint8
     Attack,
 };
 
-class Player : public GameObject
+class Player : public Character
 {
 public:
     Player();
     virtual ~Player();
 
 public:
-    void Init();
-    void Update();
+    virtual void Init() override;
+    virtual void Update() override;
 
     void ChangeState(PlayerState state);
 
@@ -25,11 +26,9 @@ public:
     void Stop();
 
 private:
-    shared_ptr<GameObject> _playerObject;
     shared_ptr<GameObject> _modelObject;
-    shared_ptr<GameObject> _obj;
     shared_ptr<GameObject> _camera;
     unordered_map<PlayerState, int32> _animMap;
-    PlayerState _state;
+    PlayerState _state = PlayerState::Idle;
 };
 

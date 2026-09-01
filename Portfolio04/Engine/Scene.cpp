@@ -47,6 +47,17 @@ void Scene::Render()
 		camera->GetCamera()->SortGameObject();
 		camera->GetCamera()->Render_Forward();
 	}
+
+	// Collider Debug Render
+	for (auto& object : _objects)
+	{
+		auto collider = object->GetCollider();
+
+		if (collider == nullptr)
+			continue;
+
+		collider->DebugRender();
+	}
 }
 
 void Scene::Add(shared_ptr<GameObject> object)

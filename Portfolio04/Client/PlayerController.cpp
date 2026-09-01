@@ -5,6 +5,7 @@
 void PlayerController::Awake()
 {
 	//_player = static_pointer_cast<Player>(GetGameObject());
+    _movement = static_pointer_cast<CharacterMovement>(GetGameObject()->GetFixedComponent(ComponentType::CharacterMovement));
     _animator = GetGameObject()->GetModelAnimator();
 }
 
@@ -12,45 +13,32 @@ void PlayerController::Update()
 {
     printf("PlayerController Update\n");
 
-    float dt = TIME->GetDeltaTime();
-
-    Vec3 pos = GetTransform()->GetPosition();
+    Vec3 pos = _player->GetTransform()->GetPosition();
 
     bool isMoving = false;
 
-	// 이동
-    if (INPUT->GetButton(KEY_TYPE::W)) 
-    {
-        pos += GetTransform()->GetForward() * _moveSpeed * dt;
+    if (INPUT->GetButton(KEY_TYPE::W)) {
+        _movement->AddMovementInput(GetTransform()->GetForward());
         isMoving = true;
     }
-     
+
     if (INPUT->GetButton(KEY_TYPE::S)) {
-        pos -= GetTransform()->GetForward() * _moveSpeed * dt;
-		isMoving = true;
+        _movement->AddMovementInput(-GetTransform()->GetForward());
+        isMoving = true;
     }
 
-    //if (INPUT->GetButton(KEY_TYPE::A))
-    //    pos -= GetTransform()->GetRight() * _moveSpeed * dt;
-    //
-    //if (INPUT->GetButton(KEY_TYPE::D))
-    //    pos += GetTransform()->GetRight() * _moveSpeed * dt;
-
-    GetTransform()->SetPosition(pos);
-
-	// 회전
     if (INPUT->GetButton(KEY_TYPE::A))
     {
-        Vec3 rotation = GetTransform()->GetLocalRotation();
-        rotation.y -= _rotSpeed * dt;
-        GetTransform()->SetLocalRotation(rotation);
+        Vec3 rot = GetTransform()->GetLocalRotation();
+        rot.y -= _rotSpeed * DT;
+        GetTransform()->SetLocalRotation(rot);
     }
 
     if (INPUT->GetButton(KEY_TYPE::D))
     {
-        Vec3 rotation = GetTransform()->GetLocalRotation();
-        rotation.y += _rotSpeed * dt;
-        GetTransform()->SetLocalRotation(rotation);
+        Vec3 rot = GetTransform()->GetLocalRotation();
+        rot.y += _rotSpeed * DT;
+        GetTransform()->SetLocalRotation(rot);
     }
 
     // =========================

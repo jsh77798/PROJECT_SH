@@ -10,6 +10,8 @@
 #include "Model.h"
 #include "ModelAnimator.h"
 #include "AssetImporter.h"
+#include "SphereCollider.h"
+#include "CharacterMovement.h"
 
 Player::Player()
 {
@@ -21,8 +23,11 @@ Player::~Player()
 
 void Player::Init()
 {
-	shared_ptr<Shader> _shader = make_shared<Shader>(L"SkinnedLit.fx");
+	InitCharacter();
 
+
+	//////////////////////////// ResourceData ////////////////////////////
+	
 	// Model (Mesh + Material)
 	shared_ptr<class Model> model = make_shared<Model>();
 	model->ReadModel(ASSIMP->MeshImporter(L"Kachujin/Mesh.fbx"));
@@ -31,18 +36,18 @@ void Player::Init()
 	// Animation
 	model->ReadAnimation(ASSIMP->AnimImporter(L"Kachujin/Idle.fbx"));
 	model->ReadAnimation(ASSIMP->AnimImporter(L"Kachujin/Run.fbx"));
-
 	_animMap[PlayerState::Idle] = model->FindAnimation(L"Kachujin/Idle");
 	_animMap[PlayerState::Move] = model->FindAnimation(L"Kachujin/Run");
+	//////////////////////////////////////////////////////////////////////
+
 
 	// PlayerController
 	auto playerController = make_shared<PlayerController>();
 	playerController->SetPlayer(this);
 
-	// PlayerObject
-	_playerObject = make_shared<GameObject>();
-	_playerObject->GetOrAddTransform()->SetPosition(Vec3{ 0.0f, 0.0f, 0.0f });
-	_playerObject->AddComponent(playerController);
+	// Collider
+	auto collider = make_shared<SphereCollider>(_debugShader);
+	collider->SetRadius(0.5f);
 
 	// ModelObject
 	_modelObject = make_shared<GameObject>();
@@ -50,23 +55,22 @@ void Player::Init()
 	_modelObject->GetOrAddTransform()->SetRotation(Vec3{ 0.0f, XM_PI, 0.0f });
 	_modelObject->AddComponent(make_shared<ModelAnimator>(_shader));
 	_modelObject->GetModelAnimator()->SetModel(model);
-	
-	// Add ModelObject as a child of PlayerObject
-	_playerObject->AddChild(_modelObject);
-
-	// CameraScript
-	auto camScript = make_shared<CameraScript>();
-	camScript->SetTarget(_playerObject);
 
 	// Camera
+	auto camScript = make_shared<CameraScript>();
+	camScript->SetTarget(shared_from_this());
 	_camera = make_shared<GameObject>();
 	_camera->GetOrAddTransform()->SetPosition(Vec3{ 0.f, 0.f, -5.f });
 	_camera->AddComponent(make_shared<Camera>());
 	_camera->AddComponent(camScript);
 	_camera->GetCamera()->SetCullingMaskLayerOnOff(Layer_UI, true);
 
-
-	CUR_SCENE->Add(_playerObject);
+	// * Player *
+	GetOrAddTransform()->SetPosition(Vec3{ 0.0f, 0.0f, 0.0f });
+	GetCharacterMovement()->SetMoveSpeed(5.0f);
+	AddComponent(playerController);
+	AddComponent(collider);
+	AddChild(_modelObject); // Add ModelObject as a child of PlayerObject
 	CUR_SCENE->Add(_modelObject);
 	CUR_SCENE->Add(_camera);
 }

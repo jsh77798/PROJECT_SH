@@ -2,11 +2,75 @@
 #include "SphereCollider.h"
 #include "AABBBoxCollider.h"
 #include "OBBBoxCollider.h"
+#include "Camera.h"
 
-SphereCollider::SphereCollider()
-	: BaseCollider(ColliderType::Sphere)
+SphereCollider::SphereCollider(shared_ptr<Shader> shader)
+	: BaseCollider(ColliderType::Sphere), _shader(shader)
 {
+    vector<Vec3> vertices;
 
+    const int32 segments = 32;
+
+    for (int32 i = 0; i < segments; i++)
+    {
+        float a0 = XM_2PI * i / segments;
+        float a1 = XM_2PI * (i + 1) / segments;
+
+        // =========================
+        // XY Plane
+        // =========================
+
+        vertices.push_back(
+            Vec3(
+                cosf(a0),
+                sinf(a0),
+                0.f));
+
+        vertices.push_back(
+            Vec3(
+                cosf(a1),
+                sinf(a1),
+                0.f));
+
+
+        // =========================
+        // XZ Plane
+        // =========================
+
+        vertices.push_back(
+            Vec3(
+                cosf(a0),
+                0.f,
+                sinf(a0)));
+
+        vertices.push_back(
+            Vec3(
+                cosf(a1),
+                0.f,
+                sinf(a1)));
+
+
+        // =========================
+        // YZ Plane
+        // =========================
+
+        vertices.push_back(
+            Vec3(
+                0.f,
+                cosf(a0),
+                sinf(a0)));
+
+        vertices.push_back(
+            Vec3(
+                0.f,
+                cosf(a1),
+                sinf(a1)));
+    }
+
+    _vertexCount = static_cast<uint32>(vertices.size());
+
+    _vertexBuffer = make_shared<VertexBuffer>();
+    _vertexBuffer->Create(vertices);
 }
 
 SphereCollider::~SphereCollider()
@@ -42,4 +106,57 @@ bool SphereCollider::Intersects(shared_ptr<BaseCollider>& other)
 	}
 
 	return false;
+}
+
+void SphereCollider::DebugRender()
+{
+    OutputDebugStringA("SphereCollider DebugRender\n");
+
+    Vec3 pos = GetTransform()->GetPosition();
+
+    char buffer[256];
+    sprintf_s(
+        buffer,
+        "Collider : %f %f %f\n",
+        pos.x, pos.y, pos.z
+    );
+
+    OutputDebugStringA(buffer);
+
+
+
+
+
+
+
+    if (_shader == nullptr)
+        return;
+
+    if (_vertexBuffer == nullptr)
+        return;
+
+    _shader->PushGlobalData(
+        Camera::S_MatView,
+        Camera::S_MatProjection);
+
+    TransformDesc desc;
+
+    Matrix scale =
+        Matrix::CreateScale(_radius);
+
+    desc.W =
+        scale * GetTransform()->GetWorldMatrix();
+
+    _shader->PushTransformData(desc);
+
+    _vertexBuffer->PushData();
+
+    // ★ 디버그 렌더링은 선으로 그린다.
+    DC->IASetPrimitiveTopology(
+        D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+
+    _shader->Draw(
+        0,
+        0,
+        _vertexCount);
 }

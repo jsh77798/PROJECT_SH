@@ -19,6 +19,8 @@ public:
 
 	ColliderType GetColliderType() { return _colliderType; }
 
+	virtual void DebugRender() {}
+
 protected:
 	ColliderType _colliderType;
 };

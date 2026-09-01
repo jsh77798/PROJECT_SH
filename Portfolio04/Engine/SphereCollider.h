@@ -4,7 +4,7 @@
 class SphereCollider : public BaseCollider
 {
 public:
-	SphereCollider();
+	SphereCollider(shared_ptr<Shader> shader);
 	virtual ~SphereCollider();
 
 	virtual void Update() override;
@@ -14,8 +14,12 @@ public:
 	void SetRadius(float radius) { _radius = radius; }
 	BoundingSphere& GetBoundingSphere() { return _boundingSphere; }
 
+	virtual void DebugRender() override;
+
 private:
 	float _radius = 1.f;
 	BoundingSphere _boundingSphere;
+	shared_ptr<Shader> _shader;
+	shared_ptr<VertexBuffer> _vertexBuffer;
+	uint32 _vertexCount = 0;
 };
-

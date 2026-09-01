@@ -2,9 +2,12 @@
 #include "MonoBehaviour.h"
 #include "Player.h"
 #include "ModelAnimator.h"
+#include "CharacterMovement.h"
 
 class PlayerController : public MonoBehaviour
 {
+    using Super = MonoBehaviour;
+
 public:
     virtual void Awake() override;
     virtual void Update() override;
@@ -16,9 +19,9 @@ public:
 
 private:
     Player* _player = nullptr;
+	shared_ptr<CharacterMovement> _movement;
     shared_ptr<ModelAnimator> _animator;
 
 private:
-    float _moveSpeed = 2.0f;
     float _rotSpeed = 2.5f;
 };

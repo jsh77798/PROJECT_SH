@@ -16,6 +16,7 @@ enum class ComponentType : uint8
 	Button,
 	BillBoard,
 	SnowBillBoard,
+	CharacterMovement,
 	// ...
 	Script,
 

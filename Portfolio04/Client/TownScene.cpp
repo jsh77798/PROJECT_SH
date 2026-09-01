@@ -1,11 +1,16 @@
 #include "pch.h"
 #include "TownScene.h"
 #include "Player.h"
+#include "Enemy.h"
 #include "GameObject.h"
 #include "MeshRenderer.h"
 #include "Transform.h"
 #include "Light.h"
 #include "Material.h"
+#include "EnemyController.h"
+
+#include "ModelAnimator.h"
+#include "SphereCollider.h"
 
 TownScene::TownScene()
     : mPlayer(nullptr)
@@ -19,12 +24,24 @@ TownScene::~TownScene()
 void TownScene::Start()
 {
     _shader = make_shared<Shader>(L"SkinnedLit.fx");
+    shared_ptr<Shader> _debugShader = make_shared<Shader>(L"Debug.fx");
 
     // ==========================
     // Player 积己
     // ==========================
     mPlayer = make_shared<Player>();
     mPlayer->Init();
+    CUR_SCENE->Add(mPlayer);
+
+
+    // ==========================
+    // Enemy 积己
+    // ==========================
+    mEnemy = make_shared<Enemy>();
+    mEnemy->SetTarget(mPlayer);
+    mEnemy->Init();
+    CUR_SCENE->Add(mEnemy);
+
 
     // ==========================
     // Light 积己
@@ -39,34 +56,42 @@ void TownScene::Start()
     light->GetLight()->SetLightDesc(lightDesc);
     CUR_SCENE->Add(light);
 
+
+    // ==========================
+    // 抛胶飘侩 寒 积己
+    // ==========================
+    auto meshShader = make_shared<Shader>(L"23. RenderDemo.fx");
+    
     // Material
     {
         shared_ptr<Material> material = make_shared<Material>();
-        material->SetShader(_shader);
-        auto texture = RESOURCES->Load<Texture>(L"Veigar", L"..\\Resources\\Textures\\veigar.jpg");
-        material->SetDiffuseMap(texture);
-        MaterialDesc& desc = material->GetMaterialDesc();
-        desc.ambient = Vec4(1.f);
-        desc.diffuse = Vec4(1.f);
-        desc.specular = Vec4(1.f);
-        RESOURCES->Add(L"Veigar", material);
+		material->SetShader(meshShader);
+		auto texture = RESOURCES->Load<Texture>(L"Veigar", L"..\\Resources\\Textures\\veigar.jpg");
+		material->SetDiffuseMap(texture);
+		MaterialDesc& desc = material->GetMaterialDesc();
+		desc.ambient = Vec4(1.f);
+		desc.diffuse = Vec4(1.f);
+		desc.specular = Vec4(1.f);
+		RESOURCES->Add(L"Veigar", material);
     }
+    // floor
+    auto collider = make_shared<SphereCollider>(_debugShader);
+    collider->SetRadius(0.5f);
 
-    // ==========================
-    // 抛胶飘侩 官蹿 积己
-    // ==========================
     auto floor = make_shared<GameObject>();
-    floor->GetOrAddTransform()->SetPosition(Vec3{ 0.f, 0.f, 0.f });
-    floor->GetOrAddTransform()->SetScale(Vec3{ 20.0f, 0.1f, 20.0f });
+    floor->GetOrAddTransform()->SetPosition(Vec3{ 0.f, 0.5f, 10.f });
+    floor->GetOrAddTransform()->SetScale(Vec3{ 1.0f, 1.0f, 1.0f });
     floor->AddComponent(make_shared<MeshRenderer>());
+    floor->AddComponent(collider);
     {
-        auto mesh = RESOURCES->Get<Mesh>(L"Quad");
+        auto mesh = RESOURCES->Get<Mesh>(L"Sphere");
         floor->GetMeshRenderer()->SetMesh(mesh);
     }
     {
         floor->GetMeshRenderer()->SetMaterial(RESOURCES->Get<Material>(L"Veigar"));
     }
     CUR_SCENE->Add(floor);
+
 }
 
 void TownScene::Update()

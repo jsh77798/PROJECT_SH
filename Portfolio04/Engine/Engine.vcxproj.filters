@@ -255,6 +255,9 @@
     <ClCompile Include="AssetImporter.cpp">
       <Filter>00. Engine\Resource</Filter>
     </ClCompile>
+    <ClCompile Include="CharacterMovement.cpp">
+      <Filter>04. Component</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -469,6 +472,9 @@
     </ClInclude>
     <ClInclude Include="AssetImporter.h">
       <Filter>00. Engine\Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="CharacterMovement.h">
+      <Filter>04. Component</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

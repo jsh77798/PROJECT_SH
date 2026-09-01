@@ -23,6 +23,9 @@
     <ClInclude Include="AppManager.h" />
     <ClInclude Include="CameraController.h" />
     <ClInclude Include="CameraScript.h" />
+    <ClInclude Include="Character.h" />
+    <ClInclude Include="Enemy.h" />
+    <ClInclude Include="EnemyController.h" />
     <ClInclude Include="GameManager.h" />
     <ClInclude Include="Main.h" />
     <ClInclude Include="pch.h" />
@@ -35,6 +38,9 @@
     <ClCompile Include="AppManager.cpp" />
     <ClCompile Include="CameraController.cpp" />
     <ClCompile Include="CameraScript.cpp" />
+    <ClCompile Include="Character.cpp" />
+    <ClCompile Include="Enemy.cpp" />
+    <ClCompile Include="EnemyController.cpp" />
     <ClCompile Include="GameManager.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="pch.cpp">
@@ -237,6 +243,7 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Effect</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
     </FxCompile>
+    <FxCompile Include="..\Shaders\Debug.fx" />
     <FxCompile Include="..\Shaders\SkinnedLit.fx" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

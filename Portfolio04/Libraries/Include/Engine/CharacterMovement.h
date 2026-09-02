@@ -21,7 +21,7 @@ public:
 
 private:
     void TickMovement();
-    bool ResolveCollision();
+    bool ResolveCollision(Vec3& normal);
     void Slide(Vec3& position);
 
 private:

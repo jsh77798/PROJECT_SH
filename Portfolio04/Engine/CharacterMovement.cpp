@@ -25,16 +25,32 @@ void CharacterMovement::Move(const Vec3& delta)
     if (delta.LengthSquared() < FLT_EPSILON)
         return;
 
-    Vec3 oldPosition = GetTransform()->GetPosition();
-    Vec3 newPosition = oldPosition + delta;
+    Vec3 oldPosition =
+        GetTransform()->GetPosition();
 
-    GetTransform()->SetPosition(newPosition);
+    // 1. 이동 시도
+    GetTransform()->SetPosition(oldPosition + delta);
 
-    if (ResolveCollision())
-    {
-        GetTransform()->SetPosition(oldPosition - delta); //?????
-    }
+    Vec3 collisionNormal;
 
+    // 2. 충돌 없음
+    if (ResolveCollision(collisionNormal) == false)
+        return;
+
+    // 3. 충돌했으므로 복구
+    GetTransform()->SetPosition(oldPosition);
+
+    // 4. 벽으로 들어가는 방향 제거
+    Vec3 slideDelta =
+        delta -
+        collisionNormal * delta.Dot(collisionNormal);
+
+    if (slideDelta.LengthSquared() < FLT_EPSILON)
+        return;
+
+    // 5. Slide
+    GetTransform()->SetPosition(
+        oldPosition + slideDelta);
 }
 
 void CharacterMovement::RotateTo(const Vec3& direction)
@@ -104,30 +120,17 @@ void CharacterMovement::TickMovement()
     _inputVector = Vec3::Zero;
 }
 
-bool CharacterMovement::ResolveCollision()
+bool CharacterMovement::ResolveCollision(Vec3& normal)
 {
-    auto myCollider = GetGameObject()->GetCollider();
+    shared_ptr<BaseCollider> collider =
+        GetGameObject()->GetCollider();
 
-    if (myCollider == nullptr)
+    if (collider == nullptr)
         return false;
 
-    auto objects = CUR_SCENE->GetObjects();
-
-    for (auto& obj : objects)
-    {
-        if (obj.get() == GetGameObject().get())
-            continue;
-
-        auto collider = obj->GetCollider();
-
-        if (collider == nullptr)
-            continue;
-
-        if (myCollider->Intersects(collider))
-            return true;
-    }
-
-    return false;
+    return SCENE->GetCurrentScene()->CheckCollision(
+        collider,
+        normal);
 }
 
 void CharacterMovement::Slide(Vec3& position)

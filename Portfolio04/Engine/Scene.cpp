@@ -2,6 +2,8 @@
 #include "Scene.h"
 #include "GameObject.h"
 #include "BaseCollider.h"
+#include "AABBBoxCollider.h"
+#include "SphereCollider.h"
 #include "Camera.h"
 #include "Terrain.h"
 #include "Button.h"
@@ -108,6 +110,41 @@ std::shared_ptr<GameObject> Scene::GetUICamera()
 	}
 
 	return nullptr;
+}
+
+bool Scene::RayCast(Ray& ray, shared_ptr<BaseCollider>& ignoreCollider, OUT shared_ptr<BaseCollider>& hitCollider, OUT float& distance)
+{
+	hitCollider = nullptr;
+	distance = FLT_MAX;
+
+	for (shared_ptr<GameObject> object : _objects)
+	{
+		shared_ptr<BaseCollider> collider =
+			object->GetCollider();
+
+		if (collider == nullptr)
+			continue;
+
+		if (collider == ignoreCollider)
+			continue;
+
+		float hitDistance = 0.f;
+
+		if (collider->Intersects(
+			ray,
+			hitDistance) == false)
+		{
+			continue;
+		}
+
+		if (hitDistance < distance)
+		{
+			distance = hitDistance;
+			hitCollider = collider;
+		}
+	}
+
+	return hitCollider != nullptr;
 }
 
 void Scene::PickUI()
@@ -228,4 +265,55 @@ void Scene::CheckCollision()
 			}
 		}
 	}
+}
+
+bool Scene::CheckCollision(shared_ptr<BaseCollider>& collider, OUT Vec3& normal)
+{
+	if (collider == nullptr)
+		return false;
+
+	for (shared_ptr<GameObject> object : _objects)
+	{
+		shared_ptr<BaseCollider> other =
+			object->GetCollider();
+
+		if (other == nullptr)
+			continue;
+
+		if (other == collider)
+			continue;
+
+		if (collider->Intersects(other) == false)
+			continue;
+
+		// Sphere
+		if (collider->GetColliderType() == ColliderType::Sphere)
+		{
+			auto sphere =
+				dynamic_pointer_cast<SphereCollider>(collider);
+
+			if (sphere->GetCollisionNormal(
+				other,
+				normal))
+			{
+				return true;
+			}
+		}
+
+		// AABB
+		else if (collider->GetColliderType() == ColliderType::AABB)
+		{
+			auto aabb =
+				dynamic_pointer_cast<AABBBoxCollider>(collider);
+
+			if (aabb->GetCollisionNormal(
+				other,
+				normal))
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
 }

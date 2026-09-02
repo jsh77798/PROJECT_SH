@@ -27,6 +27,7 @@
     <ClInclude Include="Enemy.h" />
     <ClInclude Include="EnemyController.h" />
     <ClInclude Include="GameManager.h" />
+    <ClInclude Include="HealthComponent.h" />
     <ClInclude Include="Main.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Player.h" />
@@ -42,6 +43,7 @@
     <ClCompile Include="Enemy.cpp" />
     <ClCompile Include="EnemyController.cpp" />
     <ClCompile Include="GameManager.cpp" />
+    <ClCompile Include="HealthComponent.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

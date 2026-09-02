@@ -1,5 +1,5 @@
 #pragma once
-
+#include "BaseCollider.h"
 
 class Scene
 {
@@ -18,10 +18,17 @@ public:
 	shared_ptr<GameObject> GetUICamera();
 	shared_ptr<GameObject> GetLight() { return _lights.empty() ? nullptr : *_lights.begin(); }
 
+	bool RayCast(
+		Ray& ray,
+		shared_ptr<BaseCollider>& ignoreCollider,
+		OUT shared_ptr<BaseCollider>& hitCollider,
+		OUT float& distance);
+
 	void PickUI();
 	shared_ptr<class GameObject> Pick(int32 screenX, int32 screenY);
 
 	void CheckCollision();
+	bool CheckCollision(shared_ptr<BaseCollider>& collider, OUT Vec3& normal);
 
 private:
 	unordered_set<shared_ptr<GameObject>> _objects;

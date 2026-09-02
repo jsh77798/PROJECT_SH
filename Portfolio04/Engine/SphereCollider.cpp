@@ -108,26 +108,106 @@ bool SphereCollider::Intersects(shared_ptr<BaseCollider>& other)
 	return false;
 }
 
+bool SphereCollider::GetCollisionNormal(shared_ptr<BaseCollider>& other, OUT Vec3& normal)
+{
+    if (other == nullptr)
+        return false;
+
+    // Sphere <-> Sphere
+    if (other->GetColliderType() == ColliderType::Sphere)
+    {
+        auto sphere =
+            dynamic_pointer_cast<SphereCollider>(other);
+
+        if (sphere == nullptr)
+            return false;
+
+        Vec3 centerA =
+            _boundingSphere.Center;
+
+        Vec3 centerB =
+            sphere->GetBoundingSphere().Center;
+
+        normal = centerA - centerB;
+        normal.y = 0.f;
+
+        if (normal.LengthSquared() < FLT_EPSILON)
+            return false;
+
+        normal.Normalize();
+
+        return true;
+    }
+
+    // Sphere <-> AABB
+    if (other->GetColliderType() == ColliderType::AABB)
+    {
+        auto aabb =
+            dynamic_pointer_cast<AABBBoxCollider>(other);
+
+        if (aabb == nullptr)
+            return false;
+
+        BoundingSphere& sphere =
+            _boundingSphere;
+
+        BoundingBox& box =
+            aabb->GetBoundingBox();
+
+        Vec3 sphereCenter = sphere.Center;
+        Vec3 boxCenter = box.Center;
+        Vec3 boxExtents = box.Extents;
+
+        Vec3 closestPoint;
+
+        closestPoint.x =
+            max(boxCenter.x - boxExtents.x,
+                min(sphereCenter.x,
+                    boxCenter.x + boxExtents.x));
+
+        closestPoint.y =
+            max(boxCenter.y - boxExtents.y,
+                min(sphereCenter.y,
+                    boxCenter.y + boxExtents.y));
+
+        closestPoint.z =
+            max(boxCenter.z - boxExtents.z,
+                min(sphereCenter.z,
+                    boxCenter.z + boxExtents.z));
+
+        normal =
+            sphereCenter - closestPoint;
+
+        normal.y = 0.f;
+
+        if (normal.LengthSquared() < FLT_EPSILON)
+            return false;
+
+        normal.Normalize();
+
+        return true;
+    }
+
+    return false;
+}
+
 void SphereCollider::DebugRender()
 {
-    OutputDebugStringA("SphereCollider DebugRender\n");
+	// 디버그 렌더링을 위한 로그 출력
+    {
+        OutputDebugStringA("SphereCollider DebugRender\n");
 
-    Vec3 pos = GetTransform()->GetPosition();
+        Vec3 pos = GetTransform()->GetPosition();
 
-    char buffer[256];
-    sprintf_s(
-        buffer,
-        "Collider : %f %f %f\n",
-        pos.x, pos.y, pos.z
-    );
+        char buffer[256];
+        sprintf_s(
+            buffer,
+            "Collider : %f %f %f\n",
+            pos.x, pos.y, pos.z
+        );
 
-    OutputDebugStringA(buffer);
-
-
-
-
-
-
+        OutputDebugStringA(buffer);
+    }
 
     if (_shader == nullptr)
         return;

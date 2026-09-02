@@ -12,6 +12,7 @@
 #include "AssetImporter.h"
 #include "SphereCollider.h"
 #include "CharacterMovement.h"
+#include "HealthComponent.h"
 
 Player::Player()
 {
@@ -49,6 +50,9 @@ void Player::Init()
 	auto collider = make_shared<SphereCollider>(_debugShader);
 	collider->SetRadius(0.5f);
 
+	// HealthComponent
+	auto healthComponent = make_shared<HealthComponent>();
+
 	// ModelObject
 	_modelObject = make_shared<GameObject>();
 	_modelObject->GetOrAddTransform()->SetScale(Vec3(0.01f));
@@ -70,6 +74,7 @@ void Player::Init()
 	GetCharacterMovement()->SetMoveSpeed(5.0f);
 	AddComponent(playerController);
 	AddComponent(collider);
+	AddComponent(healthComponent);
 	AddChild(_modelObject); // Add ModelObject as a child of PlayerObject
 	CUR_SCENE->Add(_modelObject);
 	CUR_SCENE->Add(_camera);

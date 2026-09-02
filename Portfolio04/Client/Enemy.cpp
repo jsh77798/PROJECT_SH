@@ -10,6 +10,7 @@
 #include "SphereCollider.h"
 #include "CharacterMovement.h"
 #include "EnemyController.h"
+#include "HealthComponent.h"
 
 Enemy::Enemy()
 {
@@ -33,8 +34,10 @@ void Enemy::Init()
 	// Animation
 	model->ReadAnimation(ASSIMP->AnimImporter(L"Kachujin/Idle.fbx"));
 	model->ReadAnimation(ASSIMP->AnimImporter(L"Kachujin/Run.fbx"));
+	model->ReadAnimation(ASSIMP->AnimImporter(L"Kachujin/Slash.fbx"));
 	_animMap[EnemyState::Idle] = model->FindAnimation(L"Kachujin/Idle");
 	_animMap[EnemyState::Move] = model->FindAnimation(L"Kachujin/Run");
+	_animMap[EnemyState::Attack] = model->FindAnimation(L"Kachujin/Slash");
 	//////////////////////////////////////////////////////////////////////
 
 	
@@ -46,6 +49,9 @@ void Enemy::Init()
 	// Collider
 	auto collider = make_shared<SphereCollider>(_debugShader);
 	collider->SetRadius(0.5f);
+
+	// HealthComponent
+	auto healthComponent = make_shared<HealthComponent>();
 
 	// ModelObject
 	_modelObject = make_shared<GameObject>();
@@ -59,6 +65,7 @@ void Enemy::Init()
 	GetCharacterMovement()->SetMoveSpeed(2.0f);
 	AddComponent(enemyController);
 	AddComponent(collider);
+	AddComponent(healthComponent);
 	AddChild(_modelObject); // Add ModelObject as a child of PlayerObject
 	CUR_SCENE->Add(_modelObject);
 }

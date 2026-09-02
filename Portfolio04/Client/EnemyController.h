@@ -20,9 +20,13 @@ public:
     void SetTarget(shared_ptr<GameObject> target);
 
 private:
+    bool CanDetectPlayer();
+    bool CanSeePlayer();
     void UpdateIdle();
     void UpdateChase();
     void UpdateAttack();
+
+    void Attack();
 
 private:
     Enemy* _enemy = nullptr;
@@ -33,4 +37,6 @@ private:
 private:
     float _detectRange = 10.0f;
     float _attackRange = 2.0f;
+    float _attackCooldown = 2.f;
+    float _attackTimer = 0.f;
 };

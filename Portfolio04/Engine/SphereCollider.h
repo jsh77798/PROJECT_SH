@@ -10,11 +10,12 @@ public:
 	virtual void Update() override;
 	virtual bool Intersects(Ray& ray, OUT float& distance) override;
 	virtual bool Intersects(shared_ptr<BaseCollider>& other) override;
+	bool GetCollisionNormal(shared_ptr<BaseCollider>& other, OUT Vec3& normal);
+
+	virtual void DebugRender() override;
 
 	void SetRadius(float radius) { _radius = radius; }
 	BoundingSphere& GetBoundingSphere() { return _boundingSphere; }
-
-	virtual void DebugRender() override;
 
 private:
 	float _radius = 1.f;

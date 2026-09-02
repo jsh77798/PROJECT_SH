@@ -11,6 +11,7 @@
 
 #include "ModelAnimator.h"
 #include "SphereCollider.h"
+#include "AABBBoxCollider.h"
 
 TownScene::TownScene()
     : mPlayer(nullptr)
@@ -75,8 +76,12 @@ void TownScene::Start()
 		RESOURCES->Add(L"Veigar", material);
     }
     // floor
-    auto collider = make_shared<SphereCollider>(_debugShader);
-    collider->SetRadius(0.5f);
+    auto collider = make_shared<AABBBoxCollider>(_debugShader);
+    collider->SetExtents(
+        Vec3(0.5f, 1.0f, 0.5f)
+    );
+
+    //collider->SetRadius(0.5f);
 
     auto floor = make_shared<GameObject>();
     floor->GetOrAddTransform()->SetPosition(Vec3{ 0.f, 0.5f, 10.f });

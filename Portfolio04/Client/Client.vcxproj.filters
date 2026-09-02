@@ -72,6 +72,9 @@
     <ClCompile Include="EnemyController.cpp">
       <Filter>Game\Character\Enemy</Filter>
     </ClCompile>
+    <ClCompile Include="HealthComponent.cpp">
+      <Filter>Game\Character</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -112,6 +115,9 @@
     </ClInclude>
     <ClInclude Include="EnemyController.h">
       <Filter>Game\Character\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="HealthComponent.h">
+      <Filter>Game\Character</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

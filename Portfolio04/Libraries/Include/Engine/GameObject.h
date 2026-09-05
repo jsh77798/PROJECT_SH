@@ -17,7 +17,7 @@ class GameObject : public enable_shared_from_this<GameObject>
 {
 public:
 	GameObject();
-	~GameObject();
+	virtual ~GameObject();
 
 	void Awake();
 	void Start();

@@ -7,22 +7,32 @@ Matrix Camera::S_MatProjection = Matrix::Identity;
 
 void Camera::SortGameObject()
 {
+	//shared_ptr<Scene> scene = CUR_SCENE;
+	//unordered_set<shared_ptr<GameObject>>& gameObjects = scene->GetObjects();
+	//
+	//_vecForward.clear();
+	//
+	//for (auto& gameObject : gameObjects)
+	//{
+	//	if (IsCulled(gameObject->GetLayerIndex()))
+	//		continue;
+	//
+	//	if (gameObject->GetMeshRenderer() == nullptr
+	//		&& gameObject->GetModelRenderer() == nullptr
+	//		&& gameObject->GetModelAnimator() == nullptr)
+	//		continue;
+	//
+	//	_vecForward.push_back(gameObject);
+	//}
 	shared_ptr<Scene> scene = CUR_SCENE;
-	unordered_set<shared_ptr<GameObject>>& gameObjects = scene->GetObjects();
+	unordered_set<shared_ptr<GameObject>>& gameObjects =
+		scene->GetObjects();
 
 	_vecForward.clear();
 
 	for (auto& gameObject : gameObjects)
 	{
-		if (IsCulled(gameObject->GetLayerIndex()))
-			continue;
-
-		if (gameObject->GetMeshRenderer() == nullptr
-			&& gameObject->GetModelRenderer() == nullptr
-			&& gameObject->GetModelAnimator() == nullptr)
-			continue;
-
-		_vecForward.push_back(gameObject);
+		AddRenderObject(gameObject);
 	}
 }
 
@@ -32,6 +42,24 @@ void Camera::Render_Forward()
 	S_MatProjection = _matProjection;
 
 	GET_SINGLE(InstancingManager)->Render(_vecForward);
+}
+
+void Camera::AddRenderObject(shared_ptr<GameObject> object)
+{
+	if (IsCulled(object->GetLayerIndex()))
+		return;
+
+	if (object->GetMeshRenderer() != nullptr
+		|| object->GetModelRenderer() != nullptr
+		|| object->GetModelAnimator() != nullptr)
+	{
+		_vecForward.push_back(object);
+	}
+
+	for (auto& child : object->GetChildren())
+	{
+		AddRenderObject(child);
+	}
 }
 
 Camera::Camera() : Super(ComponentType::Camera)

@@ -19,9 +19,15 @@ public:
         return _movement;
     }
 
+    shared_ptr<class HealthComponent> GetHealthComponent()
+    {
+        return _health;
+    }
+
 protected:
     shared_ptr<Shader> _shader;
     shared_ptr<Shader> _debugShader;
     shared_ptr<CharacterMovement> _movement;
+    shared_ptr<HealthComponent> _health;
 };
 

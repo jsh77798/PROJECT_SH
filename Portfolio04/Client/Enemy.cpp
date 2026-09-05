@@ -50,8 +50,8 @@ void Enemy::Init()
 	auto collider = make_shared<SphereCollider>(_debugShader);
 	collider->SetRadius(0.5f);
 
-	// HealthComponent
-	auto healthComponent = make_shared<HealthComponent>();
+	// Health
+	_health->SetMaxHealth(1000.f);
 
 	// ModelObject
 	_modelObject = make_shared<GameObject>();
@@ -65,9 +65,7 @@ void Enemy::Init()
 	GetCharacterMovement()->SetMoveSpeed(2.0f);
 	AddComponent(enemyController);
 	AddComponent(collider);
-	AddComponent(healthComponent);
 	AddChild(_modelObject); // Add ModelObject as a child of PlayerObject
-	CUR_SCENE->Add(_modelObject);
 }
 
 void Enemy::Update()
@@ -101,5 +99,14 @@ void Enemy::Move()
 void Enemy::Stop()
 {
 	ChangeState(EnemyState::Idle);
+}
+
+void Enemy::Attack()
+{
+}
+
+void Enemy::Death()
+{
+	CUR_SCENE->Remove(shared_from_this());
 }
 

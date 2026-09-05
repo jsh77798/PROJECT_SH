@@ -63,6 +63,11 @@ void GameObject::Update()
 	{
 		script->Update();
 	}
+
+	for (auto& child : _children)
+	{
+		child->Update();
+	}
 }
 
 void GameObject::LateUpdate()

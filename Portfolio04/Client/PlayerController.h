@@ -19,9 +19,7 @@ public:
 
 private:
     Player* _player = nullptr;
-	shared_ptr<CharacterMovement> _movement;
-    shared_ptr<ModelAnimator> _animator;
-
+	
 private:
     float _rotSpeed = 2.5f;
 };

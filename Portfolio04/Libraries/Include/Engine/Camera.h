@@ -52,6 +52,7 @@ public:
 public:
 	void SortGameObject();
 	void Render_Forward();
+	void AddRenderObject(shared_ptr<GameObject> object);
 
 	void SetCullingMaskLayerOnOff(uint8 layer, bool on)
 	{

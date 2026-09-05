@@ -4,9 +4,7 @@
 
 void PlayerController::Awake()
 {
-	//_player = static_pointer_cast<Player>(GetGameObject());
-    _movement = static_pointer_cast<CharacterMovement>(GetGameObject()->GetFixedComponent(ComponentType::CharacterMovement));
-    _animator = GetGameObject()->GetModelAnimator();
+	
 }
 
 void PlayerController::Update()
@@ -14,16 +12,17 @@ void PlayerController::Update()
     printf("PlayerController Update\n");
 
     Vec3 pos = _player->GetTransform()->GetPosition();
+    auto movement = _player->GetCharacterMovement();
 
     bool isMoving = false;
 
     if (INPUT->GetButton(KEY_TYPE::W)) {
-        _movement->AddMovementInput(GetTransform()->GetForward());
+        movement->AddMovementInput(GetTransform()->GetForward());
         isMoving = true;
     }
 
     if (INPUT->GetButton(KEY_TYPE::S)) {
-        _movement->AddMovementInput(-GetTransform()->GetForward());
+        movement->AddMovementInput(-GetTransform()->GetForward());
         isMoving = true;
     }
 
@@ -41,6 +40,11 @@ void PlayerController::Update()
         GetTransform()->SetLocalRotation(rot);
     }
 
+    if (INPUT->GetButtonDown(KEY_TYPE::LBUTTON))
+    {
+		_player->Attack();
+    }
+
     // =========================
     //  애니메이션 처리
     // =========================
@@ -51,5 +55,19 @@ void PlayerController::Update()
     else 
     {
         _player->Stop();
+    }
+
+
+    // 디버그 출력
+    {
+        char buffer[256];
+        sprintf_s(
+            buffer,
+            sizeof(buffer),
+            "isMoving : %s\n",
+            isMoving ? "true" : "false"
+        );
+
+        OutputDebugStringA(buffer);
     }
 }

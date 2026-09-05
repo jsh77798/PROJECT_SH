@@ -21,6 +21,7 @@ public:
     void SetMaxHealth(float maxHealth) 
     {
         _maxHealth = maxHealth;
+        _health = _maxHealth;
     }
 
     bool IsDead() const

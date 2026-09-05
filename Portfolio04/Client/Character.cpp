@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Character.h"
 #include "CharacterMovement.h"
+#include "HealthComponent.h"
 
 Character::Character()
 {
@@ -27,4 +28,7 @@ void Character::InitCharacter()
 
     _movement = make_shared<CharacterMovement>();
     AddComponent(_movement);
+
+    _health = make_shared<HealthComponent>();
+    AddComponent(_health);
 }

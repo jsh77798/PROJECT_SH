@@ -24,6 +24,7 @@ public:
 
 	void Move();
     void Stop();
+    void Attack();
 
 private:
     shared_ptr<GameObject> _modelObject;

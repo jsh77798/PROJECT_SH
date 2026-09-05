@@ -1,19 +1,31 @@
 #include "pch.h"
 #include "EnemyController.h"
 #include "Transform.h"
+#include "HealthComponent.h"
 
 void EnemyController::Awake()
 {
-    _movement = static_pointer_cast<CharacterMovement>(GetGameObject()->GetFixedComponent(ComponentType::CharacterMovement));
-    _animator = GetGameObject()->GetModelAnimator();
+    
 }
 
 void EnemyController::Update()
 {
+    auto health = _enemy->GetHealthComponent();
+
+    if (health == nullptr)
+        return;
+
+    if (health->IsDead())
+    {
+        UpdateDead();
+        return;
+    }
+
     if (_player == nullptr)
         return;
 
     Vec3 Pos = _enemy->GetTransform()->GetPosition();
+
     Vec3 playerPos = _player->GetTransform()->GetPosition();
 
     Vec3 direction = playerPos - Pos;
@@ -34,11 +46,6 @@ void EnemyController::Update()
     {
         UpdateIdle();
     }
-}
-
-void EnemyController::SetTarget(shared_ptr<GameObject> target)
-{
-    _player = target;
 }
 
 bool EnemyController::CanDetectPlayer()
@@ -209,7 +216,28 @@ void EnemyController::UpdateAttack()
     }
 }
 
+void EnemyController::UpdateDead()
+{
+    if (_isDead)
+        return;
+
+    _isDead = true;
+
+	_enemy->Death();
+}
+
 void EnemyController::Attack()
 {
+    if (_player == nullptr)
+        return;
+
 	_enemy->ChangeState(EnemyState::Attack);
+
+    auto health =
+		_player->GetHealthComponent();
+
+    if (health == nullptr)
+        return;
+
+    health->TakeDamage(100.f);
 }

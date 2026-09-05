@@ -26,8 +26,10 @@ public:
 
 	void Move();
     void Stop();
+    void Attack();
+    void Death();
 
-    void SetTarget(shared_ptr<GameObject> target)
+    void SetTarget(shared_ptr<Character> target)
     {
         _target = target;
     }
@@ -36,6 +38,6 @@ private:
     shared_ptr<GameObject> _modelObject;
     unordered_map<EnemyState, int32> _animMap;
     EnemyState _state = EnemyState::Idle;
-    shared_ptr<GameObject> _target;
+    shared_ptr<Character> _target;
 };
 

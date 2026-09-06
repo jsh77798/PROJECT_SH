@@ -258,6 +258,9 @@
     <ClCompile Include="CharacterMovement.cpp">
       <Filter>04. Component</Filter>
     </ClCompile>
+    <ClCompile Include="DataTableBase.cpp">
+      <Filter>98. Utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -475,6 +478,9 @@
     </ClInclude>
     <ClInclude Include="CharacterMovement.h">
       <Filter>04. Component</Filter>
+    </ClInclude>
+    <ClInclude Include="DataTableBase.h">
+      <Filter>98. Utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

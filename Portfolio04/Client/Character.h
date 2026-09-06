@@ -9,7 +9,7 @@ public:
 
 public:
     virtual void Init();
-    virtual void Update();
+    virtual void Update() override;
 
     void InitCharacter();
         

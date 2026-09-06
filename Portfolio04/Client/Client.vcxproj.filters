@@ -31,6 +31,9 @@
     <Filter Include="Game\Character\Enemy">
       <UniqueIdentifier>{e216afe9-81dd-43de-8375-5a2bbc3de307}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Game\Weapon">
+      <UniqueIdentifier>{8f25e2b1-7298-414d-a810-ea15cdd55158}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -75,6 +78,12 @@
     <ClCompile Include="HealthComponent.cpp">
       <Filter>Game\Character</Filter>
     </ClCompile>
+    <ClCompile Include="Weapon.cpp">
+      <Filter>Game\Weapon</Filter>
+    </ClCompile>
+    <ClCompile Include="Pipe.cpp">
+      <Filter>Game\Weapon</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -118,6 +127,12 @@
     </ClInclude>
     <ClInclude Include="HealthComponent.h">
       <Filter>Game\Character</Filter>
+    </ClInclude>
+    <ClInclude Include="Weapon.h">
+      <Filter>Game\Weapon</Filter>
+    </ClInclude>
+    <ClInclude Include="Pipe.h">
+      <Filter>Game\Weapon</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

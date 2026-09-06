@@ -31,13 +31,11 @@ void Enemy::Init()
 	shared_ptr<class Model> model = make_shared<Model>();
 	model->ReadModel(ASSIMP->MeshImporter(L"Kachujin/Mesh.fbx"));
 	model->ReadMaterial(ASSIMP->MeshImporter(L"Kachujin/Mesh.fbx"));
+
 	// Animation
 	model->ReadAnimation(ASSIMP->AnimImporter(L"Kachujin/Idle.fbx"));
 	model->ReadAnimation(ASSIMP->AnimImporter(L"Kachujin/Run.fbx"));
 	model->ReadAnimation(ASSIMP->AnimImporter(L"Kachujin/Slash.fbx"));
-	_animMap[EnemyState::Idle] = model->FindAnimation(L"Kachujin/Idle");
-	_animMap[EnemyState::Move] = model->FindAnimation(L"Kachujin/Run");
-	_animMap[EnemyState::Attack] = model->FindAnimation(L"Kachujin/Slash");
 	//////////////////////////////////////////////////////////////////////
 
 	
@@ -60,6 +58,13 @@ void Enemy::Init()
 	_modelObject->AddComponent(make_shared<ModelAnimator>(_shader));
 	_modelObject->GetModelAnimator()->SetModel(model);
 
+	// Animation Data
+	auto animator = _modelObject->GetModelAnimator();
+	_animMap[EnemyState::Idle] = animator->MakeAnimData("Idle", model->FindAnimation(L"Kachujin/Idle"));
+	_animMap[EnemyState::Move] = animator->MakeAnimData("Move", model->FindAnimation(L"Kachujin/Run"));
+	_animMap[EnemyState::Attack] = animator->MakeAnimData("Attack", model->FindAnimation(L"Kachujin/Slash"), false);
+	_animMap[EnemyState::Dead] = animator->MakeAnimData("Dead", model->FindAnimation(L"Kachujin/Slash"), false);
+
 	// * Enemy *
 	GetOrAddTransform()->SetPosition(Vec3{ -10.0f, 0.0f, 10.0f });
 	GetCharacterMovement()->SetMoveSpeed(2.0f);
@@ -71,6 +76,17 @@ void Enemy::Init()
 void Enemy::Update()
 {
     GameObject::Update();
+
+	if (_state == EnemyState::Dead)
+	{
+		auto animator = _modelObject->GetModelAnimator();
+
+		if (animator->IsAnimationFinished())
+		{
+			CUR_SCENE->Remove(shared_from_this());
+			return;
+		}
+	}
 }
 
 void Enemy::ChangeState(EnemyState state)
@@ -80,11 +96,16 @@ void Enemy::ChangeState(EnemyState state)
 
 	_state = state;
 
-	if (_modelObject) {
+	if (_modelObject)
+	{
+		auto animator =
+			_modelObject->GetModelAnimator();
 
-		auto animator = _modelObject->GetModelAnimator();
+		if (animator)
+		{
+			//animator->SetLoop(
+			//	state != EnemyState::Dead);
 
-		if (animator) {
 			animator->Play(_animMap[state]);
 		}
 	}
@@ -93,7 +114,6 @@ void Enemy::ChangeState(EnemyState state)
 void Enemy::Move()
 {
 	ChangeState(EnemyState::Move);
-
 }
 
 void Enemy::Stop()
@@ -103,10 +123,11 @@ void Enemy::Stop()
 
 void Enemy::Attack()
 {
+	ChangeState(EnemyState::Attack);
 }
 
 void Enemy::Death()
 {
-	CUR_SCENE->Remove(shared_from_this());
+	ChangeState(EnemyState::Dead);
 }
 

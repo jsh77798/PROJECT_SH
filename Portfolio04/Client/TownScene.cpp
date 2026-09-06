@@ -41,6 +41,7 @@ void TownScene::Start()
     mEnemy = make_shared<Enemy>();
     mEnemy->SetTarget(mPlayer);
     mEnemy->Init();
+    //mEnemy->Update();
     CUR_SCENE->Add(mEnemy);
 
 

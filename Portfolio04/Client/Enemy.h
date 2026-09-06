@@ -36,7 +36,7 @@ public:
 
 private:
     shared_ptr<GameObject> _modelObject;
-    unordered_map<EnemyState, int32> _animMap;
+    unordered_map<EnemyState, string> _animMap;
     EnemyState _state = EnemyState::Idle;
     shared_ptr<Character> _target;
 };

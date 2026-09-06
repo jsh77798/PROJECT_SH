@@ -5,17 +5,16 @@
 
 void EnemyController::Awake()
 {
-    
+    _health = _enemy->GetHealthComponent();
 }
 
 void EnemyController::Update()
 {
-    auto health = _enemy->GetHealthComponent();
 
-    if (health == nullptr)
+    if (_health == nullptr)
         return;
 
-    if (health->IsDead())
+    if (_health->IsDead())
     {
         UpdateDead();
         return;
@@ -133,11 +132,29 @@ bool EnemyController::CanSeePlayer()
 
 void EnemyController::UpdateIdle()
 {
+    if (_health == nullptr)
+        return;
+
+    if (_health->IsDead())
+    {
+        UpdateDead();
+        return;
+    }
+
     _enemy->ChangeState(EnemyState::Idle);
 }
 
 void EnemyController::UpdateChase()
 {
+    if (_health == nullptr)
+        return;
+
+    if (_health->IsDead())
+    {
+        UpdateDead();
+        return;
+    }
+
     if (CanSeePlayer() == false)
     {
         _enemy->ChangeState(EnemyState::Idle);
@@ -172,6 +189,15 @@ void EnemyController::UpdateChase()
 
 void EnemyController::UpdateAttack()
 {
+    if (_health == nullptr)
+        return;
+
+    if (_health->IsDead())
+    {
+        UpdateDead();
+        return;
+    }
+
     if (CanSeePlayer() == false)
         return;
 

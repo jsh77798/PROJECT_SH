@@ -11,6 +11,15 @@ struct AnimTransform
 	array<TransformArrayType, MAX_MODEL_KEYFRAMES> transforms;
 };
 
+struct AnimData
+{
+	string name = "none";
+	int32 animIndex = -1;
+	bool animLoop = true;
+	float speed = 1.f;
+	bool canMove = true;
+};
+
 class ModelAnimator : public Component
 {
 	using Super = Component;
@@ -23,6 +32,19 @@ public:
 	void SetPass(uint8 pass) { _pass = pass; }
 	shared_ptr<Shader> GetShader() { return _shader; }
 
+	string MakeAnimData(string name, int32 animIndex, bool animLoop = true, float speed = 1.f, bool canMove = true)
+	{
+		AnimData animeData;
+		animeData.name = name;
+		animeData.animIndex = animIndex;
+		animeData.animLoop = animLoop;
+		animeData.speed = speed;
+		animeData.canMove = canMove;
+		_animDataMap[name] = animeData;
+
+		return animeData.name;
+	}
+
 	virtual void Update() override;
 
 	void UpdateTweenData();
@@ -30,7 +52,8 @@ public:
 	InstanceID GetInstanceID();
 	TweenDesc& GetTweenDesc() { return _tweenDesc; }
 
-	void Play(int animIndex/*, float blendTime = 0.2f*/);
+	void Play(string animName);
+	bool IsAnimationFinished();
 
 private:
 	void CreateTexture();
@@ -40,6 +63,9 @@ private:
 	vector<AnimTransform> _animTransforms;
 	ComPtr<ID3D11Texture2D> _texture;
 	ComPtr<ID3D11ShaderResourceView> _srv;
+	unordered_map<string, AnimData> _animDataMap;
+	bool _loop = true;
+	bool _isAnimationFinished = false;
 
 private:
 	TweenDesc _tweenDesc;

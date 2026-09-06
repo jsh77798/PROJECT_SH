@@ -38,9 +38,6 @@ void Player::Init()
 	model->ReadAnimation(ASSIMP->AnimImporter(L"Kachujin/Idle.fbx"));
 	model->ReadAnimation(ASSIMP->AnimImporter(L"Kachujin/Run.fbx"));
 	model->ReadAnimation(ASSIMP->AnimImporter(L"Kachujin/Slash.fbx"));
-	_animMap[PlayerState::Idle] = model->FindAnimation(L"Kachujin/Idle");
-	_animMap[PlayerState::Move] = model->FindAnimation(L"Kachujin/Run");
-	_animMap[PlayerState::Attack] = model->FindAnimation(L"Kachujin/Slash");
 	//////////////////////////////////////////////////////////////////////
 
 
@@ -61,6 +58,12 @@ void Player::Init()
 	_modelObject->GetOrAddTransform()->SetRotation(Vec3{ 0.0f, XM_PI, 0.0f });
 	_modelObject->AddComponent(make_shared<ModelAnimator>(_shader));
 	_modelObject->GetModelAnimator()->SetModel(model);
+
+	// Animation Data
+	auto animator = _modelObject->GetModelAnimator();
+	_animMap[PlayerState::Idle] = animator->MakeAnimData("Idle", model->FindAnimation(L"Kachujin/Idle"));
+	_animMap[PlayerState::Move] = animator->MakeAnimData("Move", model->FindAnimation(L"Kachujin/Run"));
+	_animMap[PlayerState::Attack] = animator->MakeAnimData("Attack", model->FindAnimation(L"Kachujin/Slash"), false);
 
 	// Camera
 	auto camScript = make_shared<CameraScript>();
@@ -92,11 +95,16 @@ void Player::ChangeState(PlayerState state)
 
 	_state = state;
 
-	if (_modelObject) {
+	if (_modelObject)
+	{
+		auto animator =
+			_modelObject->GetModelAnimator();
 
-		auto animator = _modelObject->GetModelAnimator();
+		if (animator)
+		{
+			//animator->SetLoop(
+			//	state != PlayerState::Dead);
 
-		if (animator) {
 			animator->Play(_animMap[state]);
 		}
 	}

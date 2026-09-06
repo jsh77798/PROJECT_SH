@@ -8,6 +8,7 @@ enum class PlayerState : uint8
     Idle,
     Move,
     Attack,
+    Dead,
 };
 
 class Player : public Character
@@ -29,7 +30,7 @@ public:
 private:
     shared_ptr<GameObject> _modelObject;
     shared_ptr<GameObject> _camera;
-    unordered_map<PlayerState, int32> _animMap;
+    unordered_map<PlayerState, string> _animMap;
     PlayerState _state = PlayerState::Idle;
 };
 

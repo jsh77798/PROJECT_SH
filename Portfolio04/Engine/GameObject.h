@@ -21,9 +21,9 @@ public:
 
 	void Awake();
 	void Start();
-	void Update();
-	void LateUpdate();
-	void FixedUpdate();
+	virtual void Update();
+	virtual void LateUpdate();
+	virtual void FixedUpdate();
 
 	void AddChild(shared_ptr<GameObject> child);
 

@@ -36,6 +36,7 @@ private:
 
 private:
     Enemy* _enemy = nullptr;
+    shared_ptr<HealthComponent> _health;
     shared_ptr<Character> _player;
 
 private:

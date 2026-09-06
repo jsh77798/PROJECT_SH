@@ -49,9 +49,39 @@ void ModelAnimator::UpdateTweenData()
 			float timePerFrame = 1 / (currentAnim->frameRate * desc.curr.speed);
 			if (desc.curr.sumTime >= timePerFrame)
 			{
+				//desc.curr.sumTime = 0;
+				//desc.curr.currFrame = (desc.curr.currFrame + 1) % currentAnim->frameCount;
+				//desc.curr.nextFrame = (desc.curr.currFrame + 1) % currentAnim->frameCount;
+
 				desc.curr.sumTime = 0;
-				desc.curr.currFrame = (desc.curr.currFrame + 1) % currentAnim->frameCount;
-				desc.curr.nextFrame = (desc.curr.currFrame + 1) % currentAnim->frameCount;
+
+				if (desc.curr.currFrame >= currentAnim->frameCount - 1)
+				{
+					if (_loop)
+					{
+						desc.curr.currFrame = 0;
+						desc.curr.nextFrame =
+							currentAnim->frameCount > 1 ? 1 : 0;
+					}
+					else
+					{
+						_isAnimationFinished = true;
+
+						desc.curr.currFrame =
+							currentAnim->frameCount - 1;
+
+						desc.curr.nextFrame =
+							desc.curr.currFrame;
+					}
+				}
+				else
+				{
+					desc.curr.currFrame++;
+
+					desc.curr.nextFrame =
+						(desc.curr.currFrame + 1) %
+						currentAnim->frameCount;
+				}
 			}
 
 			desc.curr.ratio = (desc.curr.sumTime / timePerFrame);
@@ -63,7 +93,7 @@ void ModelAnimator::UpdateTweenData()
 	{
 		desc.tweenSumTime += DT;
 		desc.tweenRatio = desc.tweenSumTime / desc.tweenDuration;
-	
+		
 		if (desc.tweenRatio >= 1.f)
 		{
 			// 애니메이션 교체 성공
@@ -75,19 +105,20 @@ void ModelAnimator::UpdateTweenData()
 			// 교체중
 			shared_ptr<ModelAnimation> nextAnim = _model->GetAnimationByIndex(desc.next.animIndex);
 			desc.next.sumTime += DT;
-	
+		
 			float timePerFrame = 1.f / (nextAnim->frameRate * desc.next.speed);
-	
-			if (desc.next.ratio >= 1.f)
+		
+			if (desc.next.sumTime >= timePerFrame)
 			{
 				desc.next.sumTime = 0;
-	
+		
 				desc.next.currFrame = (desc.next.currFrame + 1) % nextAnim->frameCount;
 				desc.next.nextFrame = (desc.next.currFrame + 1) % nextAnim->frameCount;
 			}
-	
+		
 			desc.next.ratio = desc.next.sumTime / timePerFrame;
 		}
+
 	}
 }
 
@@ -143,20 +174,35 @@ InstanceID ModelAnimator::GetInstanceID()
 	return make_pair((uint64)_model.get(), (uint64)_shader.get());
 }
 
-void ModelAnimator::Play(int32 animIndex/*, float blendTime = 0.2f*/)
+void ModelAnimator::Play(string animName)
 {
-	if (_tweenDesc.curr.animIndex == animIndex)
+	auto iter = _animDataMap.find(animName);
+	if (iter == _animDataMap.end())	
 		return;
 
-	_tweenDesc.next.animIndex = animIndex;
-	//_tweenDesc.next.currFrame = 0;
-	//_tweenDesc.next.nextFrame = 1;
-	//_tweenDesc.next.sumTime = 0;
-	//_tweenDesc.next.speed = 1.f;
+	AnimData animData = _animDataMap[animName];
 	
-	_tweenDesc.tweenDuration = 0.2f;// blendTime;
-	//_tweenDesc.tweenSumTime = 0;
-	//_tweenDesc.tweenRatio = 0.f;
+	if (_tweenDesc.curr.animIndex == animData.animIndex)
+		return;
+
+	_tweenDesc.next.animIndex = animData.animIndex;
+	_loop = animData.animLoop;
+
+	_tweenDesc.next.currFrame = 0;
+	_tweenDesc.next.nextFrame = 1;
+	_tweenDesc.next.sumTime = 0.f;
+	_tweenDesc.next.ratio = 0.f;
+	_tweenDesc.next.speed = animData.speed;
+
+	_tweenDesc.tweenSumTime = 0.f;
+	_tweenDesc.tweenRatio = 0.f;
+
+	_tweenDesc.tweenDuration = 0.2f;
+}
+
+bool ModelAnimator::IsAnimationFinished()
+{
+	return _isAnimationFinished;;
 }
 
 void ModelAnimator::CreateTexture()

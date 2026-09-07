@@ -60,7 +60,10 @@ public:
 	}
 
 	shared_ptr<Transform> GetParent() { return _parent; }
-	void SetParent(shared_ptr<Transform> parent) { _parent = parent; UpdateTransform(); }
+	void SetParent(shared_ptr<Transform> parent) {
+		_parent = parent;
+		UpdateTransform();
+	}
 
 	const vector<shared_ptr<Transform>>& GetChildren() { return _children; }
 	void AddChild(shared_ptr<Transform> child) { _children.push_back(child); }

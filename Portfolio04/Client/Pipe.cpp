@@ -1,7 +1,10 @@
 #include "pch.h"
 #include "Pipe.h"
+#include "AssetImporter.h"
 #include "Character.h"
 #include "HealthComponent.h"
+#include "Model.h"
+#include "ModelRenderer.h"
 
 Pipe::Pipe()
 {
@@ -13,7 +16,24 @@ Pipe::~Pipe()
 
 void Pipe::Init()
 {
-    
+	auto _shader = make_shared<Shader>(L"23. RenderDemo.fx");
+
+
+	//////////////////////////// ResourceData ////////////////////////////
+
+	// Model (Mesh + Material)
+	shared_ptr<class Model> model = make_shared<Model>();
+	model->ReadModel(ASSIMP->MeshImporter(L"Tower/Tower.fbx"));
+	model->ReadMaterial(ASSIMP->MeshImporter(L"Tower/Tower.fbx"));
+	//////////////////////////////////////////////////////////////////////
+
+
+	auto renderer =
+		make_shared<ModelRenderer>(_shader);
+
+	renderer->SetModel(model);
+
+	AddComponent(renderer);
 }
 
 void Pipe::Update()

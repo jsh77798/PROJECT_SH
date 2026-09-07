@@ -100,9 +100,30 @@ void GameObject::FixedUpdate()
 
 void GameObject::AddChild(shared_ptr<GameObject> child)
 {
-	child->SetParent(shared_from_this());
+	//child->SetParent(shared_from_this());
+	//
+	//GetTransform()->AddChild(child->GetTransform());
 
-	GetTransform()->AddChild(child->GetTransform());
+
+
+
+	if (child == nullptr)
+		return;
+
+	_children.push_back(child);
+
+	shared_ptr<Transform> parentTransform =
+		GetTransform();
+
+	shared_ptr<Transform> childTransform =
+		child->GetTransform();
+
+	if (parentTransform != nullptr &&
+		childTransform != nullptr)
+	{
+		parentTransform->AddChild(childTransform);
+		childTransform->SetParent(parentTransform);
+	}
 }
 
 void GameObject::SetParent(shared_ptr<GameObject> parent)

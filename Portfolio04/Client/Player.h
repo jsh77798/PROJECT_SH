@@ -2,6 +2,7 @@
 #include "Character.h"
 #include "GameObject.h"
 #include "ModelAnimation.h"
+#include "Weapon.h"
 
 enum class PlayerState : uint8
 {
@@ -27,10 +28,20 @@ public:
     void Stop();
     void Attack();
 
+    void EquipWeapon(shared_ptr<Weapon> weapon);
+
+    shared_ptr<Weapon> GetWeapon()
+    {
+        return _weapon;
+    }
+
 private:
     shared_ptr<GameObject> _modelObject;
     shared_ptr<GameObject> _camera;
     unordered_map<PlayerState, string> _animMap;
     PlayerState _state = PlayerState::Idle;
+
+    shared_ptr<Weapon> _weapon;
+    shared_ptr<GameObject> _weaponSocket;
 };
 

@@ -13,6 +13,8 @@
 #include "SphereCollider.h"
 #include "CharacterMovement.h"
 #include "HealthComponent.h"
+#include "Pipe.h"
+#include "WeaponSocket.h"
 
 Player::Player()
 {
@@ -73,6 +75,24 @@ void Player::Init()
 	_camera->AddComponent(make_shared<Camera>());
 	_camera->AddComponent(camScript);
 	_camera->GetCamera()->SetCullingMaskLayerOnOff(Layer_UI, true);
+
+	// Weapon
+	auto socket = make_shared<WeaponSocket>();
+	socket->SetBoneName(L"RightHand");
+	socket->SetAnimator(_modelObject->GetModelAnimator());
+	_weaponSocket = make_shared<GameObject>();
+	_weaponSocket->GetOrAddTransform();
+	_weaponSocket->AddComponent(socket);
+	// ★ Player의 자식으로 등록
+	_modelObject->AddChild(_weaponSocket);
+
+	// Pipe
+	auto pipe = make_shared<Pipe>();
+	pipe->Init();
+	pipe->GetOrAddTransform()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
+    pipe->GetOrAddTransform()->SetScale(Vec3(5.f));
+	pipe->GetOrAddTransform()->SetRotation(Vec3{ 0.0f, 0.0f, 0.0f });
+    EquipWeapon(pipe);
 
 	// * Player *
 	GetOrAddTransform()->SetPosition(Vec3{ 0.0f, 0.0f, 0.0f });
@@ -157,5 +177,21 @@ void Player::Attack()
 		return;
 
 	health->TakeDamage(100.f);
+}
+
+void Player::EquipWeapon(shared_ptr<Weapon> weapon)
+{
+	if (weapon == nullptr)
+		return;
+
+	if (_weapon != nullptr)
+	{
+		// 기존 무기 제거
+		// 일단은 나중에 구현
+	}
+
+	_weapon = weapon;
+
+	_weaponSocket->AddChild(_weapon);
 }
 

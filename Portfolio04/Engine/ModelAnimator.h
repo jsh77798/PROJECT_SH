@@ -31,6 +31,7 @@ public:
 	void SetModel(shared_ptr<Model> model);
 	void SetPass(uint8 pass) { _pass = pass; }
 	shared_ptr<Shader> GetShader() { return _shader; }
+	Matrix GetBoneTransform(const wstring& boneName);
 
 	string MakeAnimData(string name, int32 animIndex, bool animLoop = true, float speed = 1.f, bool canMove = true)
 	{
@@ -48,6 +49,8 @@ public:
 	virtual void Update() override;
 
 	void UpdateTweenData();
+	void UpdateBoneTransforms();
+	void UpdateCurrentBoneTransforms();
 	void RenderInstancing(shared_ptr<class InstancingBuffer>& buffer);
 	InstanceID GetInstanceID();
 	TweenDesc& GetTweenDesc() { return _tweenDesc; }
@@ -63,6 +66,7 @@ private:
 	vector<AnimTransform> _animTransforms;
 	ComPtr<ID3D11Texture2D> _texture;
 	ComPtr<ID3D11ShaderResourceView> _srv;
+	vector<Matrix> _currentBoneTransforms;
 	unordered_map<string, AnimData> _animDataMap;
 	bool _loop = true;
 	bool _isAnimationFinished = false;

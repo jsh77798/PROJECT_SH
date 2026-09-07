@@ -84,6 +84,9 @@
     <ClCompile Include="Pipe.cpp">
       <Filter>Game\Weapon</Filter>
     </ClCompile>
+    <ClCompile Include="WeaponSocket.cpp">
+      <Filter>Game\Weapon</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -132,6 +135,9 @@
       <Filter>Game\Weapon</Filter>
     </ClInclude>
     <ClInclude Include="Pipe.h">
+      <Filter>Game\Weapon</Filter>
+    </ClInclude>
+    <ClInclude Include="WeaponSocket.h">
       <Filter>Game\Weapon</Filter>
     </ClInclude>
   </ItemGroup>

@@ -22,18 +22,82 @@ ModelAnimator::~ModelAnimator()
 
 void ModelAnimator::SetModel(shared_ptr<Model> model)
 {
+	//_model = model;
+	//
+	//const auto& materials = _model->GetMaterials();
+	//for (auto& material : materials)
+	//{
+	//	material->SetShader(_shader);
+	//}
+
 	_model = model;
 
+	if (_model == nullptr)
+		return;
+
+	_currentBoneTransforms.resize(
+		_model->GetBoneCount(),
+		Matrix::Identity);
+
 	const auto& materials = _model->GetMaterials();
+
 	for (auto& material : materials)
-	{
 		material->SetShader(_shader);
+}
+
+Matrix ModelAnimator::GetBoneTransform(const wstring& boneName)
+{
+	//if (_model == nullptr)
+	//	return Matrix::Identity;
+	//
+	//shared_ptr<ModelBone> bone =
+	//	_model->GetBoneByName(boneName);
+	//
+	//if (bone == nullptr)
+	//	return Matrix::Identity;
+	//
+	//return _currentBoneTransforms[bone->index];
+
+	if (_model == nullptr)
+		return Matrix::Identity;
+	
+	shared_ptr<ModelBone> bone =
+		_model->GetBoneByName(boneName);
+
+	if (bone == nullptr)
+	{
+		cout << "Bone Not Found!" << endl;
+		return Matrix::Identity;
 	}
+	
+	if (bone == nullptr)
+		return Matrix::Identity;
+	
+	cout << "Bone Index : "
+		<< bone->index
+		<< endl;
+	
+	cout << "Bone Transform Count : "
+		<< _currentBoneTransforms.size()
+		<< endl;
+	
+	if (bone->index < 0 ||
+		bone->index >= _currentBoneTransforms.size())
+	{
+		cout << "Invalid Bone Index!" << endl;
+		return Matrix::Identity;
+	}
+	
+	return _currentBoneTransforms[bone->index];
 }
 
 void ModelAnimator::Update()
 {
 	UpdateTweenData();
+
+	UpdateBoneTransforms();
+
+	UpdateCurrentBoneTransforms();
 }
 
 void ModelAnimator::UpdateTweenData()
@@ -119,6 +183,164 @@ void ModelAnimator::UpdateTweenData()
 			desc.next.ratio = desc.next.sumTime / timePerFrame;
 		}
 
+	}
+}
+
+void ModelAnimator::UpdateBoneTransforms()
+{
+	if (_model == nullptr)
+		return;
+
+	if (_tweenDesc.curr.animIndex < 0)
+		return;
+
+	shared_ptr<ModelAnimation> animation =
+		_model->GetAnimationByIndex(
+			_tweenDesc.curr.animIndex);
+
+	if (animation == nullptr)
+		return;
+
+	vector<Matrix> localTransforms(
+		_model->GetBoneCount(),
+		Matrix::Identity);
+
+	for (uint32 i = 0;
+		i < _model->GetBoneCount();
+		i++)
+	{
+		shared_ptr<ModelBone> bone =
+			_model->GetBoneByIndex(i);
+
+		Matrix matAnimation =
+			Matrix::Identity;
+
+		shared_ptr<ModelKeyframe> frame =
+			animation->GetKeyframe(bone->name);
+
+		if (frame != nullptr)
+		{
+			uint32 frameIndex =
+				_tweenDesc.curr.currFrame;
+
+			ModelKeyframeData& data =
+				frame->transforms[frameIndex];
+
+			Matrix S =
+				Matrix::CreateScale(
+					data.scale.x,
+					data.scale.y,
+					data.scale.z);
+
+			Matrix R =
+				Matrix::CreateFromQuaternion(
+					data.rotation);
+
+			Matrix T =
+				Matrix::CreateTranslation(
+					data.translation.x,
+					data.translation.y,
+					data.translation.z);
+
+			matAnimation = S * R * T;
+		}
+
+		int32 parentIndex =
+			bone->parentIndex;
+
+		if (parentIndex >= 0)
+		{
+			_currentBoneTransforms[i] =
+				matAnimation *
+				_currentBoneTransforms[parentIndex];
+		}
+		else
+		{
+			_currentBoneTransforms[i] =
+				matAnimation;
+		}
+	}
+}
+
+void ModelAnimator::UpdateCurrentBoneTransforms()
+{
+	if (_model == nullptr)
+		return;
+
+	TweenDesc& desc = _tweenDesc;
+
+	shared_ptr<ModelAnimation> animation =
+		_model->GetAnimationByIndex(desc.curr.animIndex);
+
+	if (animation == nullptr)
+		return;
+
+	uint32 boneCount = _model->GetBoneCount();
+
+	_currentBoneTransforms.resize(
+		boneCount,
+		Matrix::Identity);
+
+	uint32 frameIndex = desc.curr.currFrame;
+
+	if (frameIndex >= animation->frameCount)
+		frameIndex = animation->frameCount - 1;
+
+	for (uint32 b = 0; b < boneCount; b++)
+	{
+		shared_ptr<ModelBone> bone =
+			_model->GetBoneByIndex(b);
+
+		if (bone == nullptr)
+			continue;
+
+		Matrix matAnimation =
+			Matrix::Identity;
+
+		shared_ptr<ModelKeyframe> frame =
+			animation->GetKeyframe(bone->name);
+
+		if (frame != nullptr)
+		{
+			if (frameIndex >= frame->transforms.size())
+				continue;
+
+			ModelKeyframeData& data =
+				frame->transforms[frameIndex];
+
+			Matrix S;
+			Matrix R;
+			Matrix T;
+
+			S = Matrix::CreateScale(
+				data.scale.x,
+				data.scale.y,
+				data.scale.z);
+
+			R = Matrix::CreateFromQuaternion(
+				data.rotation);
+
+			T = Matrix::CreateTranslation(
+				data.translation.x,
+				data.translation.y,
+				data.translation.z);
+
+			matAnimation = S * R * T;
+		}
+
+		Matrix parentMatrix =
+			Matrix::Identity;
+
+		if (bone->parentIndex >= 0 &&
+			bone->parentIndex < boneCount)
+		{
+			parentMatrix =
+				_currentBoneTransforms[
+					bone->parentIndex];
+		}
+
+		_currentBoneTransforms[b] =
+			matAnimation * parentMatrix;
 	}
 }
 

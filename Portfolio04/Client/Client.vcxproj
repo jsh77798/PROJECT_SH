@@ -35,6 +35,7 @@
     <ClInclude Include="PlayerController.h" />
     <ClInclude Include="TownScene.h" />
     <ClInclude Include="Weapon.h" />
+    <ClInclude Include="WeaponSocket.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AnimInstancingDemo.cpp" />
@@ -55,6 +56,7 @@
     <ClCompile Include="PlayerController.cpp" />
     <ClCompile Include="TownScene.cpp" />
     <ClCompile Include="Weapon.cpp" />
+    <ClCompile Include="WeaponSocket.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\Shaders\00. Global.fx">

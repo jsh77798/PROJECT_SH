@@ -131,17 +131,48 @@ matrix GetAnimationMatrix(VS_IN input)
 
 VS_OUT VS(VS_IN input)
 {
+    //VS_OUT output;
+    //
+	////output.position = mul(input.position, BoneTransforms[BoneIndex]); // Model Global
+    //
+    //matrix m = GetAnimationMatrix(input);
+    //
+    //output.position = mul(input.position, m);
+    //output.position = mul(output.position, input.world); // W
+    //output.worldPosition = output.position;
+    //output.position = mul(output.position, VP);
+    //output.uv = input.uv;
+    //output.normal = input.normal;
+    //
+    //return output;
+    
     VS_OUT output;
 
-	//output.position = mul(input.position, BoneTransforms[BoneIndex]); // Model Global
+    matrix animationMatrix = GetAnimationMatrix(input);
 
-    matrix m = GetAnimationMatrix(input);
+    // 메시 로컬 → 모델 공간
+    float4 modelPosition = mul(
+        float4(input.position.xyz, 1.0f),
+        BoneTransforms[BoneIndex]
+    );
 
-    output.position = mul(input.position, m);
-    output.position = mul(output.position, input.world); // W
-    output.worldPosition = output.position;
-    output.position = mul(output.position, VP);
+    // 모델 공간에서 애니메이션 적용
+    float4 animatedPosition = mul(
+        modelPosition,
+        animationMatrix
+    );
+
+    // 모델 공간 → 월드 공간
+    float4 worldPosition = mul(
+        animatedPosition,
+        input.world
+    );
+
+    output.position = mul(worldPosition, VP);
+    output.worldPosition = worldPosition.xyz;
     output.uv = input.uv;
+
+    // 현재 PS는 조명을 사용하지 않으므로 기존 처리 유지
     output.normal = input.normal;
 
     return output;

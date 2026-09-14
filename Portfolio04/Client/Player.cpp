@@ -33,13 +33,16 @@ void Player::Init()
 	
 	// Model (Mesh + Material)
 	shared_ptr<class Model> model = make_shared<Model>();
-	model->ReadModel(ASSIMP->MeshImporter(L"Kachujin/Mesh.fbx"));
-	model->ReadMaterial(ASSIMP->MeshImporter(L"Kachujin/Mesh.fbx"));
+	model->ReadModel(ASSIMP->MeshImporter(L"HarryMason/HarryMason.fbx"));
+	model->ReadMaterial(ASSIMP->MeshImporter(L"HarryMason/HarryMason.fbx"));
 
 	// Animation
-	model->ReadAnimation(ASSIMP->AnimImporter(L"Kachujin/Idle.fbx"));
-	model->ReadAnimation(ASSIMP->AnimImporter(L"Kachujin/Run.fbx"));
-	model->ReadAnimation(ASSIMP->AnimImporter(L"Kachujin/Slash.fbx"));
+	model->ReadAnimation(ASSIMP->AnimImporter(L"HarryMason/HarryMason_Idle.fbx"));
+	model->ReadAnimation(ASSIMP->AnimImporter(L"HarryMason/HarryMason_LeftTurn.fbx"));
+	model->ReadAnimation(ASSIMP->AnimImporter(L"HarryMason/HarryMason_RightTurn.fbx"));
+	model->ReadAnimation(ASSIMP->AnimImporter(L"HarryMason/HarryMason_Move.fbx"));
+	model->ReadAnimation(ASSIMP->AnimImporter(L"HarryMason/HarryMason_BackMove.fbx"));
+	model->ReadAnimation(ASSIMP->AnimImporter(L"HarryMason/HarryMason_Attack1.fbx"));
 	//////////////////////////////////////////////////////////////////////
 
 
@@ -56,16 +59,19 @@ void Player::Init()
 
 	// ModelObject
 	_modelObject = make_shared<GameObject>();
-	_modelObject->GetOrAddTransform()->SetScale(Vec3(0.01f));
-	_modelObject->GetOrAddTransform()->SetRotation(Vec3{ 0.0f, XM_PI, 0.0f });
+	_modelObject->GetOrAddTransform()->SetScale(Vec3(0.00005f));
+	_modelObject->GetOrAddTransform()->SetRotation(Vec3{ 0.0f, XM_PI, XM_PI });
 	_modelObject->AddComponent(make_shared<ModelAnimator>(_shader));
 	_modelObject->GetModelAnimator()->SetModel(model);
 
 	// Animation Data
 	auto animator = _modelObject->GetModelAnimator();
-	_animMap[PlayerState::Idle] = animator->MakeAnimData("Idle", model->FindAnimation(L"Kachujin/Idle"));
-	_animMap[PlayerState::Move] = animator->MakeAnimData("Move", model->FindAnimation(L"Kachujin/Run"));
-	_animMap[PlayerState::Attack] = animator->MakeAnimData("Attack", model->FindAnimation(L"Kachujin/Slash"), false);
+	_animMap[PlayerState::Idle] = animator->MakeAnimData("Idle", model->FindAnimation(L"HarryMason/HarryMason_Idle"));
+	_animMap[PlayerState::LeftTurn] = animator->MakeAnimData("LeftTurn", model->FindAnimation(L"HarryMason/HarryMason_LeftTurn"));
+	_animMap[PlayerState::RightTurn] = animator->MakeAnimData("RightTurn", model->FindAnimation(L"HarryMason/HarryMason_RightTurn"));
+	_animMap[PlayerState::Move] = animator->MakeAnimData("Move", model->FindAnimation(L"HarryMason/HarryMason_Move"));
+	_animMap[PlayerState::BackMove] = animator->MakeAnimData("BackMove", model->FindAnimation(L"HarryMason/HarryMason_BackMove"));
+	_animMap[PlayerState::Attack] = animator->MakeAnimData("Attack", model->FindAnimation(L"HarryMason/HarryMason_Attack1"), false);
 
 	// Camera
 	auto camScript = make_shared<CameraScript>();
@@ -90,7 +96,7 @@ void Player::Init()
 	auto pipe = make_shared<Pipe>();
 	pipe->Init();
 	pipe->GetOrAddTransform()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
-    pipe->GetOrAddTransform()->SetScale(Vec3(5.f));
+    pipe->GetOrAddTransform()->SetScale(Vec3(1.f));
 	pipe->GetOrAddTransform()->SetRotation(Vec3{ 0.0f, 0.0f, 0.0f });
     EquipWeapon(pipe);
 
@@ -105,7 +111,23 @@ void Player::Init()
 
 void Player::Update()
 {
-    GameObject::Update();
+	GameObject::Update();
+
+	if (_state != PlayerState::Attack)
+		return;
+
+	if (_modelObject == nullptr)
+		return;
+
+	auto animator = _modelObject->GetModelAnimator();
+	if (animator == nullptr)
+		return;
+
+	if (animator->IsAnimationFinished())
+	{
+		// Stop()은 공격 중 요청을 막으므로 직접 변경
+		ChangeState(PlayerState::Idle);
+	}
 }
 
 void Player::ChangeState(PlayerState state)
@@ -132,17 +154,52 @@ void Player::ChangeState(PlayerState state)
 
 void Player::Move()
 {
+	if (_state == PlayerState::Attack)
+		return;
+
 	ChangeState(PlayerState::Move);
+}
+
+void Player::BackMove()
+{
+	if (_state == PlayerState::Attack)
+		return;
+
+	ChangeState(PlayerState::BackMove);
+}
+
+void Player::Turn(float direction)
+{
+	if (_state == PlayerState::Attack)
+		return;
+
+	if (direction == 0.f)
+	{
+		Stop();
+		return;
+	}
+
+	ChangeState(
+		direction < 0.f
+		? PlayerState::LeftTurn
+		: PlayerState::RightTurn
+	);
 }
 
 void Player::Stop()
 {
+	if (_state == PlayerState::Attack)
+		return;
+
 	ChangeState(PlayerState::Idle);
 }
 
 //이후 무기 시스템을 만드면 Attack시 무리와 연동하여 무기에서 데미지를 입히도록 변경해야함
 void Player::Attack()
 {
+	if (_state == PlayerState::Attack)
+		return;
+
 	ChangeState(PlayerState::Attack);
 
 	Ray ray;

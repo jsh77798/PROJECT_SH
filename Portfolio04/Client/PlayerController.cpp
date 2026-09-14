@@ -14,30 +14,41 @@ void PlayerController::Update()
     Vec3 pos = _player->GetTransform()->GetPosition();
     auto movement = _player->GetCharacterMovement();
 
-    bool isMoving = false;
+    float moveInput = 0.f;
+    float turnInput = 0.f;
 
     if (INPUT->GetButton(KEY_TYPE::W)) {
-        movement->AddMovementInput(GetTransform()->GetForward());
-        isMoving = true;
+        moveInput += 1.f;
     }
 
     if (INPUT->GetButton(KEY_TYPE::S)) {
-        movement->AddMovementInput(-GetTransform()->GetForward());
-        isMoving = true;
+        moveInput -= 1.f;
     }
 
     if (INPUT->GetButton(KEY_TYPE::A))
+        turnInput -= 1.f;
+
+    if (INPUT->GetButton(KEY_TYPE::D))
+        turnInput += 1.f;
+
+    if (turnInput != 0.f)
     {
         Vec3 rot = GetTransform()->GetLocalRotation();
-        rot.y -= _rotSpeed * DT;
+        rot.y += turnInput * _rotSpeed * DT;
         GetTransform()->SetLocalRotation(rot);
     }
 
-    if (INPUT->GetButton(KEY_TYPE::D))
+    // 이동
+    if (moveInput != 0.f)
     {
-        Vec3 rot = GetTransform()->GetLocalRotation();
-        rot.y += _rotSpeed * DT;
-        GetTransform()->SetLocalRotation(rot);
+        Vec3 forward = GetTransform()->GetForward();
+
+        movement->AddMovementInput(
+            forward * moveInput
+        );
+        //movement->AddMovementInput(
+        //    GetTransform()->GetForward() * moveInput
+        //);
     }
 
     if (INPUT->GetButtonDown(KEY_TYPE::LBUTTON))
@@ -48,26 +59,21 @@ void PlayerController::Update()
     // =========================
     //  애니메이션 처리
     // =========================
-    if (isMoving) 
+    if (moveInput > 0.f)
     {
-		_player->Move();
+        _player->Move();
+    }
+    else if (moveInput < 0.f)
+    {
+        _player->BackMove();
+    }
+    else if (turnInput != 0.f)
+    {
+        _player->Turn(turnInput);
     }
     else 
     {
         _player->Stop();
     }
 
-
-    // 디버그 출력
-    {
-        char buffer[256];
-        sprintf_s(
-            buffer,
-            sizeof(buffer),
-            "isMoving : %s\n",
-            isMoving ? "true" : "false"
-        );
-
-        OutputDebugStringA(buffer);
-    }
 }

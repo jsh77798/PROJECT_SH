@@ -24,6 +24,7 @@ public:
 	virtual void Update();
 	virtual void LateUpdate();
 	virtual void FixedUpdate();
+	virtual void PostLateUpdate();
 
 	void AddChild(shared_ptr<GameObject> child);
 

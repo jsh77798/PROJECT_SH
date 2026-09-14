@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Materials>
+    <Material>
+        <Name>Material_0</Name>
+        <DiffuseFile>Image_0.png</DiffuseFile>
+        <SpecularFile>Image_0.png</SpecularFile>
+        <NormalFile>Image_0.png</NormalFile>
+        <Ambient R="0" G="0" B="0" A="1"/>
+        <Diffuse R="0.80000001" G="0.80000001" B="0.80000001" A="1"/>
+        <Specular R="0.80000001" G="0.80000001" B="0.80000001" A="0"/>
+        <Emissive R="0" G="0" B="0" A="1"/>
+    </Material>
+</Materials>

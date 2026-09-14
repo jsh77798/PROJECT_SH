@@ -98,6 +98,26 @@ void GameObject::FixedUpdate()
 	}
 }
 
+void GameObject::PostLateUpdate()
+{
+	for (auto& component : _components)
+	{
+		if (component)
+			component->PostLateUpdate();
+	}
+
+	for (auto& script : _scripts)
+	{
+		if (script)
+			script->PostLateUpdate();
+	}
+
+	for (auto& child : _children)
+	{
+		child->PostLateUpdate();
+	}
+}
+
 void GameObject::AddChild(shared_ptr<GameObject> child)
 {
 	//child->SetParent(shared_from_this());

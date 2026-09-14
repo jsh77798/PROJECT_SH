@@ -39,6 +39,7 @@ public:
 	virtual void Update() { }
 	virtual void LateUpdate() { }
 	virtual void FixedUpdate() { }
+	virtual void PostLateUpdate() {}
 
 public:
 	ComponentType GetType() { return _type; }

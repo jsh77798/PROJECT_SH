@@ -32,14 +32,52 @@ void Scene::Update()
 
 void Scene::LateUpdate()
 {
+	//unordered_set<shared_ptr<GameObject>> objects = _objects;
+	//
+	//for (shared_ptr<GameObject> object : objects)
+	//{
+	//	object->LateUpdate();
+	//}
+	//
+	//CheckCollision();
+
 	unordered_set<shared_ptr<GameObject>> objects = _objects;
 
-	for (shared_ptr<GameObject> object : objects)
+	// 1. 실제 이동 처리
+	for (auto& object : objects)
 	{
 		object->LateUpdate();
 	}
 
+	// 2. 충돌 처리
 	CheckCollision();
+
+	// 3. 이동·충돌 이후 처리
+	// CameraScript의 추적도 여기서 실행됨
+	for (auto& object : objects)
+	{
+		object->PostLateUpdate();
+	}
+
+	// 4. 모든 추적 처리가 끝난 뒤 카메라 행렬 갱신
+	auto updateCameraMatrices =
+		[](auto&& self, const shared_ptr<GameObject>& object) -> void
+		{
+			if (auto camera = object->GetCamera())
+			{
+				camera->UpdateMatrix();
+			}
+
+			for (auto& child : object->GetChildren())
+			{
+				self(self, child);
+			}
+		};
+
+	for (auto& object : objects)
+	{
+		updateCameraMatrices(updateCameraMatrices, object);
+	}
 }
 
 void Scene::Render()

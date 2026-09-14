@@ -117,7 +117,7 @@ void ModelAnimator::UpdateTweenData()
 				//desc.curr.currFrame = (desc.curr.currFrame + 1) % currentAnim->frameCount;
 				//desc.curr.nextFrame = (desc.curr.currFrame + 1) % currentAnim->frameCount;
 
-				desc.curr.sumTime = 0;
+				desc.curr.sumTime -= timePerFrame;
 
 				if (desc.curr.currFrame >= currentAnim->frameCount - 1)
 				{
@@ -140,11 +140,25 @@ void ModelAnimator::UpdateTweenData()
 				}
 				else
 				{
+					//desc.curr.currFrame++;
+					//
+					//desc.curr.nextFrame =
+					//	(desc.curr.currFrame + 1) %
+					//	currentAnim->frameCount;
+
 					desc.curr.currFrame++;
 
-					desc.curr.nextFrame =
-						(desc.curr.currFrame + 1) %
-						currentAnim->frameCount;
+					if (desc.curr.currFrame + 1 < currentAnim->frameCount)
+					{
+						desc.curr.nextFrame = desc.curr.currFrame + 1;
+					}
+					else
+					{
+						// 반복이면 첫 프레임으로 연결
+						// 반복하지 않으면 마지막 프레임 유지
+						desc.curr.nextFrame =
+							_loop ? 0 : desc.curr.currFrame;
+					}
 				}
 			}
 
@@ -163,6 +177,8 @@ void ModelAnimator::UpdateTweenData()
 			// 애니메이션 교체 성공
 			desc.curr = desc.next;
 			desc.ClearNextAnim();
+
+			_isAnimationFinished = false;
 		}
 		else
 		{
@@ -174,7 +190,7 @@ void ModelAnimator::UpdateTweenData()
 		
 			if (desc.next.sumTime >= timePerFrame)
 			{
-				desc.next.sumTime = 0;
+				desc.next.sumTime -= timePerFrame;
 		
 				desc.next.currFrame = (desc.next.currFrame + 1) % nextAnim->frameCount;
 				desc.next.nextFrame = (desc.next.currFrame + 1) % nextAnim->frameCount;
@@ -398,33 +414,89 @@ InstanceID ModelAnimator::GetInstanceID()
 
 void ModelAnimator::Play(string animName)
 {
+	//auto iter = _animDataMap.find(animName);
+	//if (iter == _animDataMap.end())	
+	//	return;
+	//
+	//AnimData animData = _animDataMap[animName];
+	//
+	//if (_tweenDesc.curr.animIndex == animData.animIndex)
+	//	return;
+	//
+	//_tweenDesc.next.animIndex = animData.animIndex;
+	//_loop = animData.animLoop;
+	//
+	//_tweenDesc.next.currFrame = 0;
+	//_tweenDesc.next.nextFrame = 1;
+	//_tweenDesc.next.sumTime = 0.f;
+	//_tweenDesc.next.ratio = 0.f;
+	//_tweenDesc.next.speed = animData.speed;
+	//
+	//_tweenDesc.tweenSumTime = 0.f;
+	//_tweenDesc.tweenRatio = 0.f;
+	//
+	//_tweenDesc.tweenDuration = 0.2f;
+
 	auto iter = _animDataMap.find(animName);
-	if (iter == _animDataMap.end())	
+	if (iter == _animDataMap.end())
 		return;
 
-	AnimData animData = _animDataMap[animName];
-	
-	if (_tweenDesc.curr.animIndex == animData.animIndex)
+	const AnimData& animData = iter->second;
+	TweenDesc& desc = _tweenDesc;
+
+	// 이미 해당 애니메이션으로 전환 중이라면 유지
+	// 전환 시간을 다시 초기화하지 않음
+	if (desc.next.animIndex == animData.animIndex)
 		return;
 
-	_tweenDesc.next.animIndex = animData.animIndex;
+	// 현재 애니메이션을 요청했다면 다른 전환 예약을 취소
+	// 예: Idle → Move 전환 중 다시 Idle 요청
+	if (desc.curr.animIndex == animData.animIndex)
+	{
+		if (desc.next.animIndex >= 0)
+		{
+			desc.ClearNextAnim();
+
+			desc.tweenSumTime = 0.f;
+			desc.tweenRatio = 0.f;
+		}
+
+		_loop = animData.animLoop;
+		desc.curr.speed = animData.speed;
+		return;
+	}
+
+	// 새로운 애니메이션으로 전환
+	auto animation =
+		_model->GetAnimationByIndex(animData.animIndex);
+
+	if (animation == nullptr || animation->frameCount == 0)
+		return;
+
+	desc.next.animIndex = animData.animIndex;
+	desc.next.currFrame = 0;
+	desc.next.nextFrame = animation->frameCount > 1 ? 1 : 0;
+	desc.next.sumTime = 0.f;
+	desc.next.ratio = 0.f;
+	desc.next.speed = animData.speed;
+
+	desc.tweenSumTime = 0.f;
+	desc.tweenRatio = 0.f;
+	desc.tweenDuration = 0.2f;
+
 	_loop = animData.animLoop;
-
-	_tweenDesc.next.currFrame = 0;
-	_tweenDesc.next.nextFrame = 1;
-	_tweenDesc.next.sumTime = 0.f;
-	_tweenDesc.next.ratio = 0.f;
-	_tweenDesc.next.speed = animData.speed;
-
-	_tweenDesc.tweenSumTime = 0.f;
-	_tweenDesc.tweenRatio = 0.f;
-
-	_tweenDesc.tweenDuration = 0.2f;
+	_isAnimationFinished = false;
 }
 
 bool ModelAnimator::IsAnimationFinished()
 {
-	return _isAnimationFinished;;
+	//return _isAnimationFinished;;
+
+	// 다른 애니메이션으로 전환 중이면 아직 끝난 것이 아님
+	if (_tweenDesc.next.animIndex >= 0)
+		return false;
+
+	return _isAnimationFinished;
 }
 
 void ModelAnimator::CreateTexture()

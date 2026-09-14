@@ -7,7 +7,10 @@
 enum class PlayerState : uint8
 {
     Idle,
+    LeftTurn,
+    RightTurn,
     Move,
+    BackMove,
     Attack,
     Dead,
 };
@@ -25,6 +28,8 @@ public:
     void ChangeState(PlayerState state);
 
 	void Move();
+    void BackMove();
+    void Turn(float direction);
     void Stop();
     void Attack();
 

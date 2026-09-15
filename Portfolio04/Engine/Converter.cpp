@@ -37,8 +37,18 @@ void Converter::ReadAssetFile(wstring file)
 
 void Converter::ExportModelData(wstring savePath)
 {
+	//wstring finalPath = _modelPath + savePath + L".mesh";
+	//ReadModelData(_scene->mRootNode, -1, -1);
+	//ReadSkinData();
+
 	wstring finalPath = _modelPath + savePath + L".mesh";
-	ReadModelData(_scene->mRootNode, -1, -1);
+
+	_bones.clear();
+	_meshes.clear();
+	_sourceMeshIndices.clear();
+
+	ReadModelData(_scene->mRootNode, 0, -1);
+
 	ReadSkinData();
 
 	//Write CSV File
@@ -124,63 +134,148 @@ void Converter::ReadModelData(aiNode* node, int32 index, int32 parent)
 
 void Converter::ReadMeshData(aiNode* node, int32 bone)
 {
-	if (node->mNumMeshes < 1)
-		return;
+	//if (node->mNumMeshes < 1)
+	//	return;
+	//
+	//shared_ptr<asMesh> mesh = make_shared<asMesh>();
+	//mesh->name = node->mName.C_Str();
+	//mesh->boneIndex = bone;
+	//
+	//for (uint32 i = 0; i < node->mNumMeshes; i++)
+	//{
+	//	uint32 index = node->mMeshes[i];
+	//	const aiMesh* srcMesh = _scene->mMeshes[index];
+	//
+	//	// Material Name
+	//	const aiMaterial* material = _scene->mMaterials[srcMesh->mMaterialIndex];
+	//	mesh->materialName = material->GetName().C_Str();
+	//
+	//	const uint32 startVertex = mesh->vertices.size();
+	//
+	//	for (uint32 v = 0; v < srcMesh->mNumVertices; v++)
+	//	{
+	//		// Vertex
+	//		VertexType vertex;
+	//		::memcpy(&vertex.position, &srcMesh->mVertices[v], sizeof(Vec3));
+	//
+	//		// UV
+	//		if (srcMesh->HasTextureCoords(0))
+	//			::memcpy(&vertex.uv, &srcMesh->mTextureCoords[0][v], sizeof(Vec2));
+	//
+	//		// Normal
+	//		if (srcMesh->HasNormals())
+	//			::memcpy(&vertex.normal, &srcMesh->mNormals[v], sizeof(Vec3));
+	//
+	//		mesh->vertices.push_back(vertex);
+	//	}
+	//
+	//	// Index
+	//	for (uint32 f = 0; f < srcMesh->mNumFaces; f++)
+	//	{
+	//		aiFace& face = srcMesh->mFaces[f];
+	//
+	//		for (uint32 k = 0; k < face.mNumIndices; k++)
+	//			mesh->indices.push_back(face.mIndices[k] + startVertex);
+	//	}
+	//}
+	//
+	//_meshes.push_back(mesh);
 
-	shared_ptr<asMesh> mesh = make_shared<asMesh>();
-	mesh->name = node->mName.C_Str();
-	mesh->boneIndex = bone;
 
 	for (uint32 i = 0; i < node->mNumMeshes; i++)
 	{
-		uint32 index = node->mMeshes[i];
-		const aiMesh* srcMesh = _scene->mMeshes[index];
+		uint32 sourceIndex = node->mMeshes[i];
+		const aiMesh* srcMesh = _scene->mMeshes[sourceIndex];
 
-		// Material Name
-		const aiMaterial* material = _scene->mMaterials[srcMesh->mMaterialIndex];
+		// 원본 메시마다 별도로 생성
+		auto mesh = make_shared<asMesh>();
+
+		mesh->name = node->mName.C_Str();
+		mesh->boneIndex = bone;
+
+		const aiMaterial* material =
+			_scene->mMaterials[srcMesh->mMaterialIndex];
+
 		mesh->materialName = material->GetName().C_Str();
-
-		const uint32 startVertex = mesh->vertices.size();
 
 		for (uint32 v = 0; v < srcMesh->mNumVertices; v++)
 		{
-			// Vertex
-			VertexType vertex;
-			::memcpy(&vertex.position, &srcMesh->mVertices[v], sizeof(Vec3));
+			VertexType vertex{};
 
-			// UV
+			::memcpy(
+				&vertex.position,
+				&srcMesh->mVertices[v],
+				sizeof(Vec3)
+			);
+
 			if (srcMesh->HasTextureCoords(0))
-				::memcpy(&vertex.uv, &srcMesh->mTextureCoords[0][v], sizeof(Vec2));
+			{
+				::memcpy(
+					&vertex.uv,
+					&srcMesh->mTextureCoords[0][v],
+					sizeof(Vec2)
+				);
+			}
 
-			// Normal
 			if (srcMesh->HasNormals())
-				::memcpy(&vertex.normal, &srcMesh->mNormals[v], sizeof(Vec3));
+			{
+				::memcpy(
+					&vertex.normal,
+					&srcMesh->mNormals[v],
+					sizeof(Vec3)
+				);
+			}
+
+			if (srcMesh->HasTangentsAndBitangents())
+			{
+				::memcpy(
+					&vertex.tangent,
+					&srcMesh->mTangents[v],
+					sizeof(Vec3)
+				);
+			}
 
 			mesh->vertices.push_back(vertex);
 		}
 
-		// Index
 		for (uint32 f = 0; f < srcMesh->mNumFaces; f++)
 		{
-			aiFace& face = srcMesh->mFaces[f];
+			const aiFace& face = srcMesh->mFaces[f];
 
 			for (uint32 k = 0; k < face.mNumIndices; k++)
-				mesh->indices.push_back(face.mIndices[k] + startVertex);
+			{
+				mesh->indices.push_back(face.mIndices[k]);
+			}
 		}
-	}
 
-	_meshes.push_back(mesh);
+		_meshes.push_back(mesh);
+		_sourceMeshIndices.push_back(sourceIndex);
+	}
 }
 
 void Converter::ReadSkinData()
 {
-	for (uint32 i = 0; i < _scene->mNumMeshes; i++)
+	//for (uint32 i = 0; i < _scene->mNumMeshes; i++)
+	//{
+	//	aiMesh* srcMesh = _scene->mMeshes[i];
+	//	if (srcMesh->HasBones() == false)
+	//		continue;
+	//
+	//	shared_ptr<asMesh> mesh = _meshes[i];
+
+	for (uint32 i = 0; i < static_cast<uint32>(_meshes.size()); i++)
 	{
-		aiMesh* srcMesh = _scene->mMeshes[i];
+		aiMesh* srcMesh =
+			_scene->mMeshes[_sourceMeshIndices[i]];
+
 		if (srcMesh->HasBones() == false)
 			continue;
 
 		shared_ptr<asMesh> mesh = _meshes[i];
+
+
+
+
 
 		vector<asBoneWeights> tempVertexBoneWeights;
 		tempVertexBoneWeights.resize(mesh->vertices.size());

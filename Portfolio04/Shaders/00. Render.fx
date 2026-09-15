@@ -50,7 +50,8 @@ struct VertexModel
 
 cbuffer BoneBuffer
 {
-    matrix BoneTransforms[MAX_MODEL_TRANSFORMS];
+    //matrix BoneTransforms[MAX_MODEL_TRANSFORMS];
+    row_major float4x4 BoneTransforms[MAX_MODEL_TRANSFORMS];
 };
 
 uint BoneIndex;

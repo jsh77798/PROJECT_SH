@@ -22,35 +22,63 @@ void CharacterMovement::AddMovementInput(const Vec3& direction)
 
 void CharacterMovement::Move(const Vec3& delta)
 {
-    if (delta.LengthSquared() < FLT_EPSILON)
+    Vec3 horizontalDelta(delta.x, 0.f, delta.z);
+
+    if (horizontalDelta.LengthSquared() < FLT_EPSILON)
         return;
 
-    Vec3 oldPosition =
-        GetTransform()->GetPosition();
+    auto transform = GetTransform();
+    auto collider = GetGameObject()->GetCollider();
 
-    // 1. 이동 시도
-    GetTransform()->SetPosition(oldPosition + delta);
+    auto setPositionAndSync = [&](const Vec3& position)
+        {
+            transform->SetPosition(position);
 
-    Vec3 collisionNormal;
+            if (collider)
+                collider->Update();
+        };
 
-    // 2. 충돌 없음
-    if (ResolveCollision(collisionNormal) == false)
+    // 이동 성공 시 새 위치 유지
+    // 실패 시 시도 직전 위치로 복구
+    auto tryMove = [&](const Vec3& movement) -> bool
+        {
+            if (movement.LengthSquared() < FLT_EPSILON)
+                return false;
+
+            const Vec3 startPosition = transform->GetPosition();
+
+            setPositionAndSync(startPosition + movement);
+
+            Vec3 normal = Vec3::Zero;
+
+            if (ResolveCollision(normal))
+            {
+                setPositionAndSync(startPosition);
+                return false;
+            }
+
+            return true;
+        };
+
+    // 1. 원하는 방향으로 먼저 이동
+    if (tryMove(horizontalDelta))
         return;
 
-    // 3. 충돌했으므로 복구
-    GetTransform()->SetPosition(oldPosition);
+    // 2. 막히면 X/Z축을 나눠 시도
+    const Vec3 moveX(horizontalDelta.x, 0.f, 0.f);
+    const Vec3 moveZ(0.f, 0.f, horizontalDelta.z);
 
-    // 4. 벽으로 들어가는 방향 제거
-    Vec3 slideDelta =
-        delta -
-        collisionNormal * delta.Dot(collisionNormal);
-
-    if (slideDelta.LengthSquared() < FLT_EPSILON)
-        return;
-
-    // 5. Slide
-    GetTransform()->SetPosition(
-        oldPosition + slideDelta);
+    // 이동량이 큰 축부터 처리
+    if (fabsf(horizontalDelta.x) >= fabsf(horizontalDelta.z))
+    {
+        tryMove(moveX);
+        tryMove(moveZ);
+    }
+    else
+    {
+        tryMove(moveZ);
+        tryMove(moveX);
+    }
 }
 
 void CharacterMovement::RotateTo(const Vec3& direction)

@@ -4,6 +4,14 @@ struct ModelBone;
 struct ModelMesh;
 struct ModelAnimation;
 
+struct ModelCollisionBox
+{
+	int32 boneIndex = -1;
+
+	Vec3 minPosition = Vec3::Zero;
+	Vec3 maxPosition = Vec3::Zero;
+};
+
 class Model : public enable_shared_from_this<Model>
 {
 public:
@@ -36,10 +44,14 @@ public:
 	shared_ptr<ModelAnimation> GetAnimationByName(wstring name);
 	shared_ptr<ModelAnimation> GetAnimationByFile(wstring filePath);
 
+	const vector<ModelCollisionBox>& GetCollisionBoxes() const { return _collisionBoxes; }
+
 	int32 FindAnimation(wstring filename);
 
 private:
 	void BindCacheInfo();
+
+	void AddCollisionBox(int32 boneIndex,const vector<ModelVertexType>& vertices);
 
 private:
 	wstring _modelPath = L"../Resources/Models/";
@@ -52,5 +64,6 @@ private:
 	vector<shared_ptr<ModelMesh>> _meshes;
 	vector<shared_ptr<ModelAnimation>> _animations;
 	map<wstring, int32> _stateAnimations;
+	vector<ModelCollisionBox> _collisionBoxes;
 };
 

@@ -29,6 +29,7 @@
     <ClInclude Include="GameManager.h" />
     <ClInclude Include="HealthComponent.h" />
     <ClInclude Include="Main.h" />
+    <ClInclude Include="Map.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Pipe.h" />
     <ClInclude Include="Player.h" />
@@ -48,6 +49,7 @@
     <ClCompile Include="GameManager.cpp" />
     <ClCompile Include="HealthComponent.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Map.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
     </ClCompile>
@@ -252,6 +254,7 @@
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
     </FxCompile>
     <FxCompile Include="..\Shaders\Debug.fx" />
+    <FxCompile Include="..\Shaders\Map.fx" />
     <FxCompile Include="..\Shaders\SkinnedLit.fx" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

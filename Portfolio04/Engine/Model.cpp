@@ -160,43 +160,110 @@ void Model::ReadModel(wstring filename)
 		}
 	}
 
+	//// Mesh
+	//{
+	//	const uint32 count = file->Read<uint32>();
+	//
+	//	for (uint32 i = 0; i < count; i++)
+	//	{
+	//		shared_ptr<ModelMesh> mesh = make_shared<ModelMesh>();
+	//
+	//		mesh->name = Utils::ToWString(file->Read<string>());
+	//		mesh->boneIndex = file->Read<int32>();
+	//
+	//		// Material
+	//		mesh->materialName = Utils::ToWString(file->Read<string>());
+	//
+	//		//VertexData
+	//		{
+	//			const uint32 count = file->Read<uint32>();
+	//			vector<ModelVertexType> vertices;
+	//			vertices.resize(count);
+	//
+	//			void* data = vertices.data();
+	//			file->Read(&data, sizeof(ModelVertexType) * count);
+	//			mesh->geometry->AddVertices(vertices);
+	//		}
+	//
+	//		//IndexData
+	//		{
+	//			const uint32 count = file->Read<uint32>();
+	//
+	//			vector<uint32> indices;
+	//			indices.resize(count);
+	//
+	//			void* data = indices.data();
+	//			file->Read(&data, sizeof(uint32) * count);
+	//			mesh->geometry->AddIndices(indices);
+	//		}
+	//
+	//		mesh->CreateBuffers();
+	//
+	//		_meshes.push_back(mesh);
+	//	}
+	//}
+	//
+	//BindCacheInfo();
+
+
 	// Mesh
 	{
-		const uint32 count = file->Read<uint32>();
+		_collisionBoxes.clear();
 
-		for (uint32 i = 0; i < count; i++)
+		const uint32 meshCount = file->Read<uint32>();
+
+		for (uint32 i = 0; i < meshCount; i++)
 		{
-			shared_ptr<ModelMesh> mesh = make_shared<ModelMesh>();
+			auto mesh = make_shared<ModelMesh>();
 
 			mesh->name = Utils::ToWString(file->Read<string>());
 			mesh->boneIndex = file->Read<int32>();
+			mesh->materialName =
+				Utils::ToWString(file->Read<string>());
 
-			// Material
-			mesh->materialName = Utils::ToWString(file->Read<string>());
+			// VertexData
+			const uint32 vertexCount = file->Read<uint32>();
 
-			//VertexData
+			vector<ModelVertexType> vertices(vertexCount);
+
+			if (vertexCount > 0)
 			{
-				const uint32 count = file->Read<uint32>();
-				vector<ModelVertexType> vertices;
-				vertices.resize(count);
-
 				void* data = vertices.data();
-				file->Read(&data, sizeof(ModelVertexType) * count);
-				mesh->geometry->AddVertices(vertices);
+				file->Read(
+					&data,
+					sizeof(ModelVertexType) * vertexCount
+				);
 			}
 
-			//IndexData
+			// IndexData
+			// 충돌 메시도 반드시 인덱스 데이터까지 읽어야
+			// 다음 메시의 파일 위치가 맞음
+			const uint32 indexCount = file->Read<uint32>();
+
+			vector<uint32> indices(indexCount);
+
+			if (indexCount > 0)
 			{
-				const uint32 count = file->Read<uint32>();
-
-				vector<uint32> indices;
-				indices.resize(count);
-
 				void* data = indices.data();
-				file->Read(&data, sizeof(uint32) * count);
-				mesh->geometry->AddIndices(indices);
+				file->Read(
+					&data,
+					sizeof(uint32) * indexCount
+				);
 			}
 
+			const bool isCollisionMesh =
+				mesh->name.rfind(L"COL_", 0) == 0;
+
+			if (isCollisionMesh)
+			{
+				AddCollisionBox(mesh->boneIndex, vertices);
+
+				// 렌더링 메시 목록에는 추가하지 않음
+				continue;
+			}
+
+			mesh->geometry->AddVertices(vertices);
+			mesh->geometry->AddIndices(indices);
 			mesh->CreateBuffers();
 
 			_meshes.push_back(mesh);
@@ -346,4 +413,69 @@ void Model::BindCacheInfo()
 			}
 		}
 	}
+}
+
+void Model::AddCollisionBox(int32 boneIndex, const vector<ModelVertexType>& vertices)
+{
+	if (boneIndex < 0 ||
+		static_cast<uint32>(boneIndex) >= _bones.size() ||
+		vertices.empty())
+	{
+		return;
+	}
+
+	const Matrix& nodeMatrix = _bones[boneIndex]->transform;
+
+	ModelCollisionBox box;
+	box.boneIndex = boneIndex;
+	box.minPosition = Vec3(FLT_MAX, FLT_MAX, FLT_MAX);
+	box.maxPosition = Vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+
+	for (const auto& vertex : vertices)
+	{
+		Vec3 position = XMVector3TransformCoord(
+			vertex.position,
+			nodeMatrix
+		);
+
+		if (position.x < box.minPosition.x)
+			box.minPosition.x = position.x;
+		if (position.y < box.minPosition.y)
+			box.minPosition.y = position.y;
+		if (position.z < box.minPosition.z)
+			box.minPosition.z = position.z;
+
+		if (position.x > box.maxPosition.x)
+			box.maxPosition.x = position.x;
+		if (position.y > box.maxPosition.y)
+			box.maxPosition.y = position.y;
+		if (position.z > box.maxPosition.z)
+			box.maxPosition.z = position.z;
+	}
+
+	// 한 노드가 여러 재질의 메시로 분리됐어도
+	// 충돌 박스는 하나로 합침
+	for (auto& existing : _collisionBoxes)
+	{
+		if (existing.boneIndex != boneIndex)
+			continue;
+
+		if (box.minPosition.x < existing.minPosition.x)
+			existing.minPosition.x = box.minPosition.x;
+		if (box.minPosition.y < existing.minPosition.y)
+			existing.minPosition.y = box.minPosition.y;
+		if (box.minPosition.z < existing.minPosition.z)
+			existing.minPosition.z = box.minPosition.z;
+
+		if (box.maxPosition.x > existing.maxPosition.x)
+			existing.maxPosition.x = box.maxPosition.x;
+		if (box.maxPosition.y > existing.maxPosition.y)
+			existing.maxPosition.y = box.maxPosition.y;
+		if (box.maxPosition.z > existing.maxPosition.z)
+			existing.maxPosition.z = box.maxPosition.z;
+
+		return;
+	}
+
+	_collisionBoxes.push_back(box);
 }

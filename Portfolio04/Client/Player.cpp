@@ -101,7 +101,7 @@ void Player::Init()
     EquipWeapon(pipe);
 
 	// * Player *
-	GetOrAddTransform()->SetPosition(Vec3{ 0.0f, 0.0f, 0.0f });
+	GetOrAddTransform()->SetPosition(Vec3{ 0.0f, 1.0f, 0.0f });
 	GetCharacterMovement()->SetMoveSpeed(5.0f);
 	AddComponent(playerController);
 	AddComponent(collider);

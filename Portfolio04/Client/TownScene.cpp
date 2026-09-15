@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "TownScene.h"
+#include "Map.h"
 #include "Player.h"
 #include "Enemy.h"
 #include "GameObject.h"
@@ -25,7 +26,16 @@ TownScene::~TownScene()
 void TownScene::Start()
 {
     _shader = make_shared<Shader>(L"SkinnedLit.fx");
+    shared_ptr<Shader> _mapShader = make_shared<Shader>(L"Map.fx");
     shared_ptr<Shader> _debugShader = make_shared<Shader>(L"Debug.fx");
+
+    // ==========================
+    // Map 持失
+    // ==========================
+    auto map = make_shared<Map>();
+    map->Init(_mapShader, _debugShader);
+    CUR_SCENE->Add(map);
+
 
     // ==========================
     // Player 持失

@@ -46,5 +46,6 @@ private:
 	vector<shared_ptr<asBone>> _bones;
 	vector<shared_ptr<asMesh>> _meshes;
 	vector<shared_ptr<asMaterial>> _materials;
+	vector<uint32> _sourceMeshIndices;
 };
 

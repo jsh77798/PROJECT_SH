@@ -41,16 +41,48 @@ void ModelRenderer::RenderInstancing(shared_ptr<class InstancingBuffer>& buffer)
 	if (lightObj)
 		_shader->PushLightData(lightObj->GetLight()->GetLightDesc());
 
+	//// Bones
+	//BoneDesc boneDesc;
+	//
+	//const uint32 boneCount = _model->GetBoneCount();
+	//for (uint32 i = 0; i < boneCount; i++)
+	//{
+	//	shared_ptr<ModelBone> bone = _model->GetBoneByIndex(i);
+	//	boneDesc.transforms[i] = bone->transform;
+	//}
+	//_shader->PushBoneData(boneDesc);
+
+
 	// Bones
-	BoneDesc boneDesc;
+	BoneDesc boneDesc{};
 
 	const uint32 boneCount = _model->GetBoneCount();
+
+	// CPU 배열에 저장할 수 있는 행렬 개수
+	const uint32 capacity = static_cast<uint32>(
+		sizeof(boneDesc.transforms) /
+		sizeof(boneDesc.transforms[0])
+		);
+
+	// 배열 범위를 초과하면 렌더링 중단
+	if (boneCount > capacity)
+	{
+		OutputDebugStringA(
+			"ModelRenderer: bone count exceeds array capacity.\n"
+		);
+		return;
+	}
+
 	for (uint32 i = 0; i < boneCount; i++)
 	{
-		shared_ptr<ModelBone> bone = _model->GetBoneByIndex(i);
+		shared_ptr<ModelBone> bone =
+			_model->GetBoneByIndex(i);
+
 		boneDesc.transforms[i] = bone->transform;
 	}
+
 	_shader->PushBoneData(boneDesc);
+
 
 	const auto& meshes = _model->GetMeshes();
 	for (auto& mesh : meshes)

@@ -7,6 +7,8 @@
 #include "Camera.h"
 #include "Terrain.h"
 #include "Button.h"
+#include "SnowBillboard.h"
+#include "Skybox.h"
 
 void Scene::Start()
 {
@@ -82,21 +84,95 @@ void Scene::LateUpdate()
 
 void Scene::Render()
 {
-	for (auto& camera : _cameras)
+	//for (auto& camera : _cameras)
+	//{
+	//	camera->GetCamera()->SortGameObject();
+	//	camera->GetCamera()->Render_Forward();
+	//}
+	//
+	//// Collider Debug Render
+	//for (auto& object : _objects)
+	//{
+	//	auto collider = object->GetCollider();
+	//
+	//	if (collider == nullptr)
+	//		continue;
+	//
+	//	collider->DebugRender();
+	//}
+
+	// 자식 오브젝트의 눈 컴포넌트까지 렌더링
+	auto renderSnow =
+		[](auto&& self,
+			const shared_ptr<GameObject>& object,
+			const Vec3& cameraPosition) -> void
+		{
+			if (auto snow = object->GetSnowBillboard())
+			{
+				snow->Render(cameraPosition);
+			}
+
+			for (auto& child : object->GetChildren())
+			{
+				self(self, child, cameraPosition);
+			}
+		};
+
+	// 1. 월드 카메라
+	for (auto& cameraObject : _cameras)
 	{
-		camera->GetCamera()->SortGameObject();
-		camera->GetCamera()->Render_Forward();
+		auto camera = cameraObject->GetCamera();
+
+		if (camera->GetProjectionType() !=
+			ProjectionType::Perspective)
+		{
+			continue;
+		}
+
+		// 맵·캐릭터 렌더링 및 현재 카메라 행렬 설정
+		camera->SortGameObject();
+		camera->Render_Forward();
+
+		// 추가: 하늘 렌더링
+		if (_skybox)
+		{
+			_skybox->Render();
+		}
+
+		// 눈 렌더링
+		Vec3 cameraPosition =
+			cameraObject->GetTransform()->GetPosition();
+
+		for (auto& object : _objects)
+		{
+			renderSnow(renderSnow, object, cameraPosition);
+		}
+
+		// 콜리전도 월드 카메라 행렬로 렌더링
+		for (auto& object : _objects)
+		{
+			auto collider = object->GetCollider();
+
+			if (collider)
+			{
+				collider->DebugRender();
+			}
+		}
 	}
 
-	// Collider Debug Render
-	for (auto& object : _objects)
+	// 2. UI 카메라 ? 마지막에 렌더링
+	for (auto& cameraObject : _cameras)
 	{
-		auto collider = object->GetCollider();
+		auto camera = cameraObject->GetCamera();
 
-		if (collider == nullptr)
+		if (camera->GetProjectionType() !=
+			ProjectionType::Orthographic)
+		{
 			continue;
+		}
 
-		collider->DebugRender();
+		camera->SortGameObject();
+		camera->Render_Forward();
 	}
 }
 

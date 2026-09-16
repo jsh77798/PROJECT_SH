@@ -5,6 +5,7 @@
 cbuffer SnowBuffer
 {
     float4 Color;
+
     float3 Velocity;
     float DrawDistance;
 
@@ -17,65 +18,124 @@ cbuffer SnowBuffer
 
 struct VertexInput
 {
-    float4 position : POSITION;
+    float3 position : POSITION;
     float2 uv : TEXCOORD;
     float2 scale : SCALE;
     float2 random : RANDOM;
 };
 
-struct V_OUT
+struct VertexOutputSnow
 {
     float4 position : SV_POSITION;
     float2 uv : TEXCOORD;
-    float alpha : ALPHA;
+    float alpha : TEXCOORD1;
 };
 
-V_OUT VS(VertexInput input)
+VertexOutputSnow VS(VertexInput input)
 {
-    V_OUT output;
+    VertexOutputSnow output;
 
-    float3 displace = Velocity * Time * 100;
+    float3 area = max(
+        Extent,
+        float3(0.001f, 0.001f, 0.001f)
+    );
 
-    // input.position.y += displace;
-    input.position.y = Origin.y + Extent.y - (input.position.y - displace) % Extent.y;
-    input.position.x += cos(Time - input.random.x) * Turbulence;
-    input.position.z += cos(Time - input.random.y) * Turbulence;
-    //input.position.xyz = Origin + (Extent + (input.position.xyz + displace) % Extent) % Extent - (Extent * 0.5f);
+    // 월드 단위/초로 이동
+    float3 particle =
+        input.position + Velocity * Time;
 
-    float4 position = mul(input.position, W);
+    particle.x +=
+        sin(Time + input.random.x * 6.283185f) * Turbulence;
 
-    float3 up = float3(0, 1, 0);
-    //float3 forward = float3(0, 0, 1);
-    float3 forward = position.xyz - CameraPosition(); // BillBoard
-    float3 right = normalize(cross(up, forward));
+    particle.z +=
+        cos(Time + input.random.y * 6.283185f) * Turbulence;
 
-    position.xyz += (input.uv.x - 0.5f) * right * input.scale.x;
-    position.xyz += (1.0f - input.uv.y - 0.5f) * up * input.scale.y;
-    position.w = 1.0f;
+    // 카메라 주변 영역에서 반복
+    float3 center = Origin +
+        (frac((particle - Origin) / area + 0.5f) - 0.5f)
+        * area;
 
-    output.position = mul(mul(position, V), P);
+    // 카메라를 향하는 사각형
+    float3 cameraRight = normalize(
+        mul(float4(1, 0, 0, 0), VInv).xyz
+    );
+
+    float3 cameraUp = normalize(
+        mul(float4(0, 1, 0, 0), VInv).xyz
+    );
+
+    float3 position = center;
+
+    position += cameraRight *
+        ((input.uv.x - 0.5f) * input.scale.x);
+
+    position += cameraUp *
+        ((0.5f - input.uv.y) * input.scale.y);
+
+    // 이미 월드 좌표이므로 W는 곱하지 않음
+    output.position = mul(float4(position, 1.0f), VP);
     output.uv = input.uv;
 
-    output.alpha = 1.0f;
+    float distanceToCamera =
+        length(center - CameraPosition());
 
-    // Alpha Blending
-    float4 view = mul(position, V);
-    output.alpha = saturate(1 - view.z / DrawDistance) * 0.8f;
+    // 영역 경계에서 재배치되는 모습 완화
+    float3 edge = saturate(
+        (area * 0.5f - abs(center - Origin))
+        / max(area * 0.1f, float3(0.001f, 0.001f, 0.001f))
+    );
+
+    float edgeFade = min(edge.x, min(edge.y, edge.z));
+
+    output.alpha = edgeFade * saturate(
+        1.0f - distanceToCamera / max(DrawDistance, 0.001f)
+    );
 
     return output;
 }
 
-float4 PS(V_OUT input) : SV_Target
+float4 PS(VertexOutputSnow input) : SV_TARGET
 {
-    float4 diffuse = DiffuseMap.Sample(LinearSampler, input.uv);
+    float4 textureColor =
+        DiffuseMap.Sample(LinearSampler, input.uv);
 
-    diffuse.rgb = Color.rgb * input.alpha * 2.0f;
-    diffuse.a = diffuse.a * input.alpha * 1.5f;
+    float4 color;
+    color.rgb = textureColor.rgb * Color.rgb;
+    color.a = textureColor.a * Color.a * input.alpha;
 
-    return diffuse;
+    clip(color.a - 0.01f);
+
+    return color;
 }
+
+DepthStencilState SnowDepth
+{
+    DepthEnable = true;
+    DepthWriteMask = ZERO;
+    DepthFunc = LESS_EQUAL;
+};
+
+RasterizerState SnowRasterizer
+{
+    FillMode = Solid;
+    CullMode = None;
+};
 
 technique11 T0
 {
-    PASS_BS_VP(P0, AlphaBlend, VS, PS)
+    pass P0
+    {
+        SetRasterizerState(SnowRasterizer);
+        SetDepthStencilState(SnowDepth, 0);
+
+        SetBlendState(
+            AlphaBlend,
+            float4(0, 0, 0, 0),
+            0xFFFFFFFF
+        );
+
+        SetVertexShader(CompileShader(vs_5_0, VS()));
+        SetGeometryShader(NULL);
+        SetPixelShader(CompileShader(ps_5_0, PS()));
+    }
 };

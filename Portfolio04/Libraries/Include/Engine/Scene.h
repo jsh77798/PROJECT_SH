@@ -1,6 +1,8 @@
 #pragma once
 #include "BaseCollider.h"
 
+class Skybox;
+
 class Scene
 {
 public:
@@ -17,6 +19,11 @@ public:
 	shared_ptr<GameObject> GetMainCamera();
 	shared_ptr<GameObject> GetUICamera();
 	shared_ptr<GameObject> GetLight() { return _lights.empty() ? nullptr : *_lights.begin(); }
+
+	void SetSkybox(shared_ptr<Skybox> skybox)
+	{
+		_skybox = skybox;
+	}
 
 	bool RayCast(
 		Ray& ray,
@@ -36,5 +43,7 @@ private:
 	unordered_set<shared_ptr<GameObject>> _cameras;
 	// Cache Light
 	unordered_set<shared_ptr<GameObject>> _lights;
+
+	shared_ptr<Skybox> _skybox;
 };
 

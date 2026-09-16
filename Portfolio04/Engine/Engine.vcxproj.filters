@@ -261,6 +261,9 @@
     <ClCompile Include="DataTableBase.cpp">
       <Filter>98. Utils</Filter>
     </ClCompile>
+    <ClCompile Include="SkyBox.cpp">
+      <Filter>06. UI &amp; Effect</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -481,6 +484,9 @@
     </ClInclude>
     <ClInclude Include="DataTableBase.h">
       <Filter>98. Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="SkyBox.h">
+      <Filter>06. UI &amp; Effect</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

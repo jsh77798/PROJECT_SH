@@ -9,6 +9,8 @@
 #include "Light.h"
 #include "Material.h"
 #include "EnemyController.h"
+#include "SnowBillboard.h"
+#include "Skybox.h"
 
 #include "ModelAnimator.h"
 #include "SphereCollider.h"
@@ -36,6 +38,55 @@ void TownScene::Start()
     map->Init(_mapShader, _debugShader);
     CUR_SCENE->Add(map);
 
+    // ==========================
+    // 환경 설정
+    // ==========================
+    // 눈 생성
+    {
+        auto shader =
+            make_shared<Shader>(L"29. SnowDemo.fx");
+
+        auto material = make_shared<Material>();
+        material->SetShader(shader);
+
+        auto texture = RESOURCES->Load<Texture>(
+            L"SnowTexture",
+            L"..\\Resources\\Textures\\snow.png"
+        );
+
+        material->SetDiffuseMap(texture);
+
+        auto snowObject = make_shared<GameObject>();
+        snowObject->GetOrAddTransform()
+            ->SetLocalPosition(Vec3::Zero);
+
+        auto snow = make_shared<SnowBillboard>(
+            Vec3(40.f, 12.f, 40.f), // 눈이 내리는 영역 전체 크기
+            1000                   // 눈송이 개수
+        );
+
+        snow->SetMaterial(material);
+        snowObject->AddComponent(snow);
+
+        CUR_SCENE->Add(snowObject);
+    }
+    // Skybox 생성
+    {
+        // 앞서 수정한 하늘 셰이더를 이 이름으로 저장
+        auto shader =
+            make_shared<Shader>(L"18. SkyDemo.fx");
+
+        // 실제 하늘 텍스처 파일이 필요합니다.
+        auto texture = RESOURCES->Load<Texture>(
+            L"SkyTexture",
+            L"..\\Resources\\Textures\\sky.png"
+        );
+
+        auto skybox = make_shared<Skybox>();
+        skybox->Init(shader, texture);
+
+        CUR_SCENE->SetSkybox(skybox);
+    }
 
     // ==========================
     // Player 생성

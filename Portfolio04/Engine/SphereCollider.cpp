@@ -80,10 +80,30 @@ SphereCollider::~SphereCollider()
 
 void SphereCollider::Update()
 {
-	_boundingSphere.Center = GetGameObject()->GetTransform()->GetPosition();
+	//_boundingSphere.Center = GetGameObject()->GetTransform()->GetPosition();
+    //
+	//Vec3 scale = GetGameObject()->GetTransform()->GetScale();
+	//_boundingSphere.Radius = _radius * max(max(scale.x, scale.y), scale.z);
 
-	Vec3 scale = GetGameObject()->GetTransform()->GetScale();
-	_boundingSphere.Radius = _radius * max(max(scale.x, scale.y), scale.z);
+    auto transform = GetGameObject()->GetTransform();
+
+    Vec3 scale = transform->GetScale();
+
+    float scaleMax = max(
+        max(fabsf(scale.x), fabsf(scale.y)),
+        fabsf(scale.z)
+    );
+
+    _boundingSphere.Radius = _radius * scaleMax;
+
+    Vec3 center = transform->GetPosition();
+
+    if (_useFootPosition)
+    {
+        center.y += _boundingSphere.Radius;
+    }
+
+    _boundingSphere.Center = center;
 }
 
 bool SphereCollider::Intersects(Ray& ray, OUT float& distance)

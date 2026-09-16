@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Materials>
+    <Material>
+        <Name>VRAM page #15.018</Name>
+        <DiffuseFile>Silent_Hill_1_Meshes_-_Steel_Pipe_T.png</DiffuseFile>
+        <SpecularFile>Silent_Hill_1_Meshes_-_Steel_Pipe_T.png</SpecularFile>
+        <NormalFile>Silent_Hill_1_Meshes_-_Steel_Pipe_T.png</NormalFile>
+        <Ambient R="0" G="0" B="0" A="1"/>
+        <Diffuse R="1" G="1" B="1" A="1"/>
+        <Specular R="1" G="1" B="1" A="0"/>
+        <Emissive R="0" G="0" B="0" A="1"/>
+    </Material>
+</Materials>

@@ -499,6 +499,60 @@ bool ModelAnimator::IsAnimationFinished()
 	return _isAnimationFinished;
 }
 
+bool ModelAnimator::GetAnimationProgress(const string& animName, float& progress)
+{
+	progress = 0.f;
+
+	if (_model == nullptr)
+		return false;
+
+	auto iter = _animDataMap.find(animName);
+
+	if (iter == _animDataMap.end())
+		return false;
+
+	const int32 animIndex = iter->second.animIndex;
+
+	// 공격으로 전환 중이면 next의 시간을 사용
+	const auto* frame = &_tweenDesc.curr;
+
+	if (_tweenDesc.next.animIndex == animIndex)
+	{
+		frame = &_tweenDesc.next;
+	}
+	else if (_tweenDesc.curr.animIndex != animIndex)
+	{
+		return false;
+	}
+
+	auto animation = _model->GetAnimationByIndex(animIndex);
+
+	if (animation == nullptr || animation->frameCount == 0)
+		return false;
+
+	if (animation->frameCount == 1)
+	{
+		progress = 1.f;
+		return true;
+	}
+
+	float framePosition =
+		static_cast<float>(frame->currFrame);
+
+	if (frame->nextFrame == frame->currFrame + 1)
+	{
+		framePosition += frame->ratio;
+	}
+
+	progress = framePosition /
+		static_cast<float>(animation->frameCount - 1);
+
+	if (progress < 0.f) progress = 0.f;
+	if (progress > 1.f) progress = 1.f;
+
+	return true;
+}
+
 void ModelAnimator::CreateTexture()
 {
 	if (_model->GetAnimationCount() == 0)

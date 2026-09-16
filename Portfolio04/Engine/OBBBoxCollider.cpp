@@ -74,6 +74,9 @@ OBBBoxCollider::~OBBBoxCollider()
 
 void OBBBoxCollider::Update()
 {
+    if (_useWorldBox)
+        return;
+
     auto transform = GetGameObject()->GetTransform();
 
     _boundingBox.Center =

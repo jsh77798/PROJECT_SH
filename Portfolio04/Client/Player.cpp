@@ -43,8 +43,14 @@ void Player::Init()
 	model->ReadAnimation(ASSIMP->AnimImporter(L"HarryMason/HarryMason_Move.fbx"));
 	model->ReadAnimation(ASSIMP->AnimImporter(L"HarryMason/HarryMason_BackMove.fbx"));
 	model->ReadAnimation(ASSIMP->AnimImporter(L"HarryMason/HarryMason_Attack1.fbx"));
+	model->ReadAnimation(ASSIMP->AnimImporter(L"HarryMason/HarryMason_PipeAttack1.fbx"));
 	//////////////////////////////////////////////////////////////////////
 
+
+	// Movement
+	_movement->SetStepHeight(0.3f);
+	_movement->SetGroundSnapDistance(0.15f);
+	_movement->SetFootOffset(1.2f);
 
 	// PlayerController
 	auto playerController = make_shared<PlayerController>();
@@ -53,6 +59,7 @@ void Player::Init()
 	// Collider
 	auto collider = make_shared<SphereCollider>(_debugShader);
 	collider->SetRadius(0.5f);
+	collider->SetUseFootPosition(false);
 
 	// Health
 	_health->SetMaxHealth(1000.f);
@@ -72,6 +79,7 @@ void Player::Init()
 	_animMap[PlayerState::Move] = animator->MakeAnimData("Move", model->FindAnimation(L"HarryMason/HarryMason_Move"));
 	_animMap[PlayerState::BackMove] = animator->MakeAnimData("BackMove", model->FindAnimation(L"HarryMason/HarryMason_BackMove"));
 	_animMap[PlayerState::Attack] = animator->MakeAnimData("Attack", model->FindAnimation(L"HarryMason/HarryMason_Attack1"), false);
+	_animMap[PlayerState::PipeAttack] = animator->MakeAnimData("PipeAttack", model->FindAnimation(L"HarryMason/HarryMason_PipeAttack1"), false);
 
 	// Camera
 	auto camScript = make_shared<CameraScript>();
@@ -84,7 +92,7 @@ void Player::Init()
 
 	// Weapon
 	auto socket = make_shared<WeaponSocket>();
-	socket->SetBoneName(L"RightHand");
+	socket->SetBoneName(L"10");
 	socket->SetAnimator(_modelObject->GetModelAnimator());
 	_weaponSocket = make_shared<GameObject>();
 	_weaponSocket->GetOrAddTransform();
@@ -95,13 +103,13 @@ void Player::Init()
 	// Pipe
 	auto pipe = make_shared<Pipe>();
 	pipe->Init();
-	pipe->GetOrAddTransform()->SetLocalPosition(Vec3(0.f, 0.f, 0.f));
-    pipe->GetOrAddTransform()->SetScale(Vec3(1.f));
-	pipe->GetOrAddTransform()->SetRotation(Vec3{ 0.0f, 0.0f, 0.0f });
+	pipe->GetOrAddTransform()->SetPosition(Vec3(200.f, 3000.f, 9000.f));
+    pipe->GetOrAddTransform()->SetScale(Vec3(100.f));
+	pipe->GetOrAddTransform()->SetRotation(Vec3{ 0.0f, XM_PI, XM_PI });
     EquipWeapon(pipe);
 
 	// * Player *
-	GetOrAddTransform()->SetPosition(Vec3{ 0.0f, 1.0f, 0.0f });
+	GetOrAddTransform()->SetPosition(Vec3{ 40.0f, 10.0f, 100.0f });
 	GetCharacterMovement()->SetMoveSpeed(5.0f);
 	AddComponent(playerController);
 	AddComponent(collider);
@@ -113,7 +121,7 @@ void Player::Update()
 {
 	GameObject::Update();
 
-	if (_state != PlayerState::Attack)
+	if (_state != PlayerState::PipeAttack)
 		return;
 
 	if (_modelObject == nullptr)
@@ -123,9 +131,30 @@ void Player::Update()
 	if (animator == nullptr)
 		return;
 
+	float progress = 0.f;
+
+	if (animator->GetAnimationProgress("PipeAttack", progress))
+	{
+		// 이전~현재 진행 구간이 타격 구간과 겹치는지 검사
+		// 한 프레임에 타격 구간을 넘어가도 한 번은 검사
+		bool crossedHitWindow =
+			progress >= _previousAttackProgress &&
+			progress >= _attackHitStart &&
+			_previousAttackProgress <= _attackHitEnd;
+
+		if (crossedHitWindow && _weapon)
+		{
+			_weapon->Attack();
+		}
+
+		_previousAttackProgress = progress;
+	}
+
 	if (animator->IsAnimationFinished())
 	{
-		// Stop()은 공격 중 요청을 막으므로 직접 변경
+		if (_weapon)
+			_weapon->EndAttack();
+
 		ChangeState(PlayerState::Idle);
 	}
 }
@@ -154,7 +183,7 @@ void Player::ChangeState(PlayerState state)
 
 void Player::Move()
 {
-	if (_state == PlayerState::Attack)
+	if (_state == PlayerState::PipeAttack)
 		return;
 
 	ChangeState(PlayerState::Move);
@@ -162,7 +191,7 @@ void Player::Move()
 
 void Player::BackMove()
 {
-	if (_state == PlayerState::Attack)
+	if (_state == PlayerState::PipeAttack)
 		return;
 
 	ChangeState(PlayerState::BackMove);
@@ -170,7 +199,7 @@ void Player::BackMove()
 
 void Player::Turn(float direction)
 {
-	if (_state == PlayerState::Attack)
+	if (_state == PlayerState::PipeAttack)
 		return;
 
 	if (direction == 0.f)
@@ -188,7 +217,7 @@ void Player::Turn(float direction)
 
 void Player::Stop()
 {
-	if (_state == PlayerState::Attack)
+	if (_state == PlayerState::PipeAttack)
 		return;
 
 	ChangeState(PlayerState::Idle);
@@ -197,43 +226,17 @@ void Player::Stop()
 //이후 무기 시스템을 만드면 Attack시 무리와 연동하여 무기에서 데미지를 입히도록 변경해야함
 void Player::Attack()
 {
-	if (_state == PlayerState::Attack)
+	if (_state == PlayerState::PipeAttack)
 		return;
 
-	ChangeState(PlayerState::Attack);
-
-	Ray ray;
-
-	ray.position = GetTransform()->GetPosition();
-	ray.direction = GetTransform()->GetForward();
-
-	shared_ptr<BaseCollider> Collider = GetCollider();
-
-	shared_ptr<BaseCollider> hitCollider;
-	float hitDistance = 0.f;
-
-	//일단은 선으로 RayCast해서 맞은 Collider가 Character인지 확인하고 맞으면 데미지 입히기
-	if (SCENE->GetCurrentScene()->RayCast(
-		ray,
-		Collider,
-		hitCollider,
-		hitDistance) == false)
-	{
-		return;
-	}
-
-	shared_ptr<GameObject> hitObject = hitCollider->GetGameObject();
-	Character* character = dynamic_cast<Character*>(hitObject.get());
-
-	if (character == nullptr)
+	if (_weapon == nullptr)
 		return;
 
-	auto health = character->GetHealthComponent();
+	_previousAttackProgress = 0.f;
 
-	if (health == nullptr)
-		return;
+	_weapon->BeginAttack();
 
-	health->TakeDamage(100.f);
+	ChangeState(PlayerState::PipeAttack);
 }
 
 void Player::EquipWeapon(shared_ptr<Weapon> weapon)
@@ -241,13 +244,8 @@ void Player::EquipWeapon(shared_ptr<Weapon> weapon)
 	if (weapon == nullptr)
 		return;
 
-	if (_weapon != nullptr)
-	{
-		// 기존 무기 제거
-		// 일단은 나중에 구현
-	}
-
 	_weapon = weapon;
+	_weapon->SetOwner(shared_from_this());
 
 	_weaponSocket->AddChild(_weapon);
 }

@@ -17,11 +17,15 @@ public:
 	virtual bool Intersects(Ray& ray, OUT float& distance) = 0;
 	virtual bool Intersects(shared_ptr<BaseCollider>& other) = 0;
 
+	void SetGround(bool ground) { _isGround = ground; }
+	bool IsGround() const { return _isGround; }
+
 	ColliderType GetColliderType() { return _colliderType; }
 
 	virtual void DebugRender() {}
 
 protected:
 	ColliderType _colliderType;
+	bool _isGround = false;
 };
 

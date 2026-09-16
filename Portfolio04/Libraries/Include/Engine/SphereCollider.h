@@ -12,6 +12,12 @@ public:
 	virtual bool Intersects(shared_ptr<BaseCollider>& other) override;
 	bool GetCollisionNormal(shared_ptr<BaseCollider>& other, OUT Vec3& normal);
 
+	void SetUseFootPosition(bool value)
+	{
+		_useFootPosition = value;
+	}
+
+
 	virtual void DebugRender() override;
 
 	void SetRadius(float radius) { _radius = radius; }
@@ -23,4 +29,5 @@ private:
 	shared_ptr<Shader> _shader;
 	shared_ptr<VertexBuffer> _vertexBuffer;
 	uint32 _vertexCount = 0;
+	bool _useFootPosition = false;
 };

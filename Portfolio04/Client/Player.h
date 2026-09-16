@@ -12,6 +12,7 @@ enum class PlayerState : uint8
     Move,
     BackMove,
     Attack,
+    PipeAttack,
     Dead,
 };
 
@@ -33,6 +34,11 @@ public:
     void Stop();
     void Attack();
 
+    bool IsAttacking() const
+    {
+        return _state == PlayerState::PipeAttack;
+    }
+
     void EquipWeapon(shared_ptr<Weapon> weapon);
 
     shared_ptr<Weapon> GetWeapon()
@@ -48,5 +54,9 @@ private:
 
     shared_ptr<Weapon> _weapon;
     shared_ptr<GameObject> _weaponSocket;
+    float _previousAttackProgress = 0.f;
+    // 실제 휘두르는 구간에 맞춰 조절
+    float _attackHitStart = 15.f / 48.f;
+    float _attackHitEnd = 23.f / 48.f;
 };
 

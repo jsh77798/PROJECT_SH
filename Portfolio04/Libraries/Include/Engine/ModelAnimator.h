@@ -57,6 +57,10 @@ public:
 
 	void Play(string animName);
 	bool IsAnimationFinished();
+	bool GetAnimationProgress(
+		const string& animName,
+		float& progress
+	);
 
 private:
 	void CreateTexture();

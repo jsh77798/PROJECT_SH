@@ -14,6 +14,17 @@ void PlayerController::Update()
     Vec3 pos = _player->GetTransform()->GetPosition();
     auto movement = _player->GetCharacterMovement();
 
+    if (INPUT->GetButtonDown(KEY_TYPE::LBUTTON))
+    {
+		_player->Attack();
+    }
+
+    if (_player->IsAttacking())
+    {
+        movement->ClearMovementInput();
+        return;
+    }
+
     float moveInput = 0.f;
     float turnInput = 0.f;
 
@@ -51,10 +62,6 @@ void PlayerController::Update()
         //);
     }
 
-    if (INPUT->GetButtonDown(KEY_TYPE::LBUTTON))
-    {
-		_player->Attack();
-    }
 
     // =========================
     //  局聪皋捞记 贸府

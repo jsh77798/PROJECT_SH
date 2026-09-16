@@ -5,6 +5,7 @@
 #include "ModelRenderer.h"
 #include "Transform.h"
 #include "AABBBoxCollider.h"
+#include "OBBBoxCollider.h"
 #include "Scene.h"
 //#include <cfloat>
 
@@ -40,6 +41,7 @@ void Map::Init(shared_ptr<Shader> shader, shared_ptr<Shader> debugShader)
         Matrix::CreateTranslation(mapPosition);
 
     CreateWallColliders(model, debugShader, mapWorld);
+    CreateSlopeColliders(model, debugShader, mapWorld);
 }
 
 void Map::CreateWallColliders(shared_ptr<Model> model, shared_ptr<Shader> debugShader, const Matrix& mapWorld)
@@ -81,11 +83,69 @@ void Map::CreateWallColliders(shared_ptr<Model> model, shared_ptr<Shader> debugS
             make_shared<AABBBoxCollider>(debugShader);
 
         collider->SetExtents(extents);
+        collider->SetGround(box.isGround);
         wall->AddComponent(collider);
 
         collider->GetBoundingBox().Center = center;
         collider->GetBoundingBox().Extents = extents;
 
         CUR_SCENE->Add(wall);
+    }
+}
+
+void Map::CreateSlopeColliders(shared_ptr<Model> model, shared_ptr<Shader> debugShader, const Matrix& mapWorld)
+{
+    for (const auto& slope : model->GetCollisionSlopes())
+    {
+        if (slope.points.size() < 8)
+        {
+            OutputDebugStringA(
+                "COL_Slope: use a box with thickness.\n"
+            );
+            continue;
+        }
+
+        vector<DirectX::XMFLOAT3> worldPoints;
+        worldPoints.reserve(slope.points.size());
+
+        for (const Vec3& point : slope.points)
+        {
+            Vec3 worldPoint =
+                XMVector3TransformCoord(point, mapWorld);
+
+            worldPoints.emplace_back(
+                worldPoint.x,
+                worldPoint.y,
+                worldPoint.z
+            );
+        }
+
+        BoundingOrientedBox worldBox;
+
+        BoundingOrientedBox::CreateFromPoints(
+            worldBox,
+            worldPoints.size(),
+            worldPoints.data(),
+            sizeof(DirectX::XMFLOAT3)
+        );
+
+        auto object = make_shared<GameObject>();
+
+        object->GetOrAddTransform()->SetPosition(
+            Vec3(
+                worldBox.Center.x,
+                worldBox.Center.y,
+                worldBox.Center.z
+            )
+        );
+
+        auto collider =
+            make_shared<OBBBoxCollider>(debugShader);
+
+        collider->SetWorldBox(worldBox);
+        collider->SetGround(true);
+        object->AddComponent(collider);
+
+        CUR_SCENE->Add(object);
     }
 }

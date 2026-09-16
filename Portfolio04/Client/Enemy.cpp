@@ -66,7 +66,7 @@ void Enemy::Init()
 	_animMap[EnemyState::Dead] = animator->MakeAnimData("Dead", model->FindAnimation(L"Kachujin/Slash"), false);
 
 	// * Enemy *
-	GetOrAddTransform()->SetPosition(Vec3{ -10.0f, 0.0f, 10.0f });
+	GetOrAddTransform()->SetPosition(Vec3{ -5.0f, 5.0f, 5.0f });
 	GetCharacterMovement()->SetMoveSpeed(2.0f);
 	AddComponent(enemyController);
 	AddComponent(collider);

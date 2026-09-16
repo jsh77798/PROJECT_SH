@@ -8,8 +8,16 @@ struct ModelCollisionBox
 {
 	int32 boneIndex = -1;
 
+	bool isGround = false;
+
 	Vec3 minPosition = Vec3::Zero;
 	Vec3 maxPosition = Vec3::Zero;
+};
+
+struct ModelCollisionSlope
+{
+	int32 boneIndex = -1;
+	vector<Vec3> points;
 };
 
 class Model : public enable_shared_from_this<Model>
@@ -45,13 +53,15 @@ public:
 	shared_ptr<ModelAnimation> GetAnimationByFile(wstring filePath);
 
 	const vector<ModelCollisionBox>& GetCollisionBoxes() const { return _collisionBoxes; }
+	const vector<ModelCollisionSlope>& GetCollisionSlopes() const { return _collisionSlopes; }
 
 	int32 FindAnimation(wstring filename);
 
 private:
 	void BindCacheInfo();
 
-	void AddCollisionBox(int32 boneIndex,const vector<ModelVertexType>& vertices);
+	void AddCollisionBox(int32 boneIndex, const vector<ModelVertexType>& vertices);
+	void AddCollisionSlope(int32 boneIndex, const vector<ModelVertexType>& vertices);
 
 private:
 	wstring _modelPath = L"../Resources/Models/";
@@ -65,5 +75,6 @@ private:
 	vector<shared_ptr<ModelAnimation>> _animations;
 	map<wstring, int32> _stateAnimations;
 	vector<ModelCollisionBox> _collisionBoxes;
+	vector<ModelCollisionSlope> _collisionSlopes;
 };
 

@@ -5,6 +5,12 @@
 #include "HealthComponent.h"
 #include "Model.h"
 #include "ModelRenderer.h"
+#include "Scene.h"
+#include "Transform.h"
+#include "BaseCollider.h"
+#include "SphereCollider.h"
+#include "AABBBoxCollider.h"
+#include "OBBBoxCollider.h"
 
 Pipe::Pipe()
 {
@@ -23,8 +29,8 @@ void Pipe::Init()
 
 	// Model (Mesh + Material)
 	shared_ptr<class Model> model = make_shared<Model>();
-	model->ReadModel(ASSIMP->MeshImporter(L"Tower/Tower.fbx"));
-	model->ReadMaterial(ASSIMP->MeshImporter(L"Tower/Tower.fbx"));
+	model->ReadModel(ASSIMP->MeshImporter(L"Pipe/Pipe.fbx"));
+	model->ReadMaterial(ASSIMP->MeshImporter(L"Pipe/Pipe.fbx"));
 	//////////////////////////////////////////////////////////////////////
 
 
@@ -32,8 +38,10 @@ void Pipe::Init()
 		make_shared<ModelRenderer>(_shader);
 
 	renderer->SetModel(model);
-
+	renderer->SetPass(1);
 	AddComponent(renderer);
+
+    SetHitRadius(0.9f);
 }
 
 void Pipe::Update()
@@ -43,37 +51,79 @@ void Pipe::Update()
 
 void Pipe::Attack()
 {
-	Ray ray;
+    if (!_attackActive)
+        return;
 
-	ray.position = GetTransform()->GetPosition();
-	ray.direction = GetTransform()->GetForward();
+    auto owner = _owner.lock();
 
-	shared_ptr<BaseCollider> Collider = GetCollider();
+    if (owner == nullptr)
+        return;
 
-	shared_ptr<BaseCollider> hitCollider;
-	float hitDistance = 0.f;
+    BoundingSphere hitSphere;
 
-	//일단은 선으로 RayCast해서 맞은 Collider가 Character인지 확인하고 맞으면 데미지 입히기
-	if (SCENE->GetCurrentScene()->RayCast(
-		ray,
-		Collider,
-		hitCollider,
-		hitDistance) == false)
-	{
-		return;
-	}
+    // 일단 파이프 오브젝트 원점을 중심으로 검사
+    hitSphere.Center = GetTransform()->GetPosition();
+    hitSphere.Radius = _hitRadius;
 
-	shared_ptr<GameObject> hitObject = hitCollider->GetGameObject();
-	Character* character = dynamic_cast<Character*>(hitObject.get());
+    for (const auto& object :
+        SCENE->GetCurrentScene()->GetObjects())
+    {
+        if (object == owner || object.get() == this)
+            continue;
 
-	if (character == nullptr)
-		return;
+        if (_hitObjects.find(object) != _hitObjects.end())
+            continue;
 
-	auto health = character->GetHealthComponent();
+        auto character = dynamic_pointer_cast<Character>(object);
 
-	if (health == nullptr)
-		return;
+        if (character == nullptr)
+            continue;
 
-	health->TakeDamage(100.f);
+        auto collider = object->GetCollider();
+
+        if (collider == nullptr)
+            continue;
+
+        collider->Update();
+
+        bool hit = false;
+
+        switch (collider->GetColliderType())
+        {
+        case ColliderType::Sphere:
+            hit = hitSphere.Intersects(
+                dynamic_pointer_cast<SphereCollider>(collider)
+                ->GetBoundingSphere()
+            );
+            break;
+
+        case ColliderType::AABB:
+            hit = hitSphere.Intersects(
+                dynamic_pointer_cast<AABBBoxCollider>(collider)
+                ->GetBoundingBox()
+            );
+            break;
+
+        case ColliderType::OBB:
+            hit = hitSphere.Intersects(
+                dynamic_pointer_cast<OBBBoxCollider>(collider)
+                ->GetBoundingBox()
+            );
+            break;
+        }
+
+        if (!hit)
+            continue;
+
+        auto health = character->GetHealthComponent();
+
+        if (health == nullptr)
+            continue;
+
+        // 데미지 처리 전에 등록
+        _hitObjects.insert(object);
+
+        health->TakeDamage(GetDamage());
+    }
 }
 

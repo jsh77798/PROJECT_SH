@@ -209,6 +209,7 @@ void Model::ReadModel(wstring filename)
 	// Mesh
 	{
 		_collisionBoxes.clear();
+		_collisionSlopes.clear();
 
 		const uint32 meshCount = file->Read<uint32>();
 
@@ -251,14 +252,26 @@ void Model::ReadModel(wstring filename)
 				);
 			}
 
-			const bool isCollisionMesh =
-				mesh->name.rfind(L"COL_", 0) == 0;
+			//const bool isCollisionMesh =
+			//	mesh->name.rfind(L"COL_", 0) == 0;
+			//
+			//if (isCollisionMesh)
+			//{
+			//	AddCollisionBox(mesh->boneIndex, vertices);
+			//
+			//	// 렌더링 메시 목록에는 추가하지 않음
+			//	continue;
+			//}
 
-			if (isCollisionMesh)
+			if (mesh->name.rfind(L"COL_Slope_", 0) == 0)
+			{
+				AddCollisionSlope(mesh->boneIndex, vertices);
+				continue;
+			}
+
+			if (mesh->name.rfind(L"COL_", 0) == 0)
 			{
 				AddCollisionBox(mesh->boneIndex, vertices);
-
-				// 렌더링 메시 목록에는 추가하지 않음
 				continue;
 			}
 
@@ -428,6 +441,9 @@ void Model::AddCollisionBox(int32 boneIndex, const vector<ModelVertexType>& vert
 
 	ModelCollisionBox box;
 	box.boneIndex = boneIndex;
+	box.isGround =
+		_bones[boneIndex]->name.rfind(L"COL_Floor_", 0) == 0 ||
+		_bones[boneIndex]->name.rfind(L"COL_Stair_", 0) == 0;
 	box.minPosition = Vec3(FLT_MAX, FLT_MAX, FLT_MAX);
 	box.maxPosition = Vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 
@@ -478,4 +494,60 @@ void Model::AddCollisionBox(int32 boneIndex, const vector<ModelVertexType>& vert
 	}
 
 	_collisionBoxes.push_back(box);
+}
+
+void Model::AddCollisionSlope(int32 boneIndex, const vector<ModelVertexType>& vertices)
+{
+	if (boneIndex < 0 ||
+		static_cast<uint32>(boneIndex) >= _bones.size() ||
+		vertices.empty())
+	{
+		return;
+	}
+
+	ModelCollisionSlope* slope = nullptr;
+
+	// 재질 때문에 나뉜 메시도 같은 노드라면 합침
+	for (auto& existing : _collisionSlopes)
+	{
+		if (existing.boneIndex == boneIndex)
+		{
+			slope = &existing;
+			break;
+		}
+	}
+
+	if (slope == nullptr)
+	{
+		ModelCollisionSlope data;
+		data.boneIndex = boneIndex;
+
+		_collisionSlopes.push_back(data);
+		slope = &_collisionSlopes.back();
+	}
+
+	const Matrix& nodeMatrix = _bones[boneIndex]->transform;
+
+	for (const auto& vertex : vertices)
+	{
+		Vec3 point = XMVector3TransformCoord(
+			vertex.position,
+			nodeMatrix
+		);
+
+		// UV나 노멀 분리로 중복된 꼭짓점 제거
+		bool duplicate = false;
+
+		for (const Vec3& existing : slope->points)
+		{
+			if ((existing - point).LengthSquared() < 1e-8f)
+			{
+				duplicate = true;
+				break;
+			}
+		}
+
+		if (!duplicate)
+			slope->points.push_back(point);
+	}
 }

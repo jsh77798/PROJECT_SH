@@ -8,18 +8,18 @@ public:
     virtual ~Pipe();
 
 public:
-    virtual void Init();
+    virtual void Init() override;
     virtual void Update() override;
 
 public:
     virtual void Attack() override;
 
-    float GetDamage() const
+    void SetHitRadius(float radius)
     {
-        return _damage;
+        _hitRadius = radius;
     }
 
-protected:
-    float _damage = 10.f;
+private:
+    float _hitRadius = 0.3f; // 월드 단위, 실제 파이프 크기에 맞춰 조절
 };
 

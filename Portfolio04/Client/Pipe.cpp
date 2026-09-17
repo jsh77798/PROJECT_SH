@@ -34,9 +34,7 @@ void Pipe::Init()
 	//////////////////////////////////////////////////////////////////////
 
 
-	auto renderer =
-		make_shared<ModelRenderer>(_shader);
-
+	auto renderer = make_shared<ModelRenderer>(_shader);
 	renderer->SetModel(model);
 	renderer->SetPass(1);
 	AddComponent(renderer);

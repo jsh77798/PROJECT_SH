@@ -7,7 +7,6 @@
 #include "AABBBoxCollider.h"
 #include "OBBBoxCollider.h"
 #include "Scene.h"
-//#include <cfloat>
 
 void Map::Init(shared_ptr<Shader> shader, shared_ptr<Shader> debugShader)
 {
@@ -84,6 +83,7 @@ void Map::CreateWallColliders(shared_ptr<Model> model, shared_ptr<Shader> debugS
 
         collider->SetExtents(extents);
         collider->SetGround(box.isGround);
+        collider->SetBlocksCamera(true);
         wall->AddComponent(collider);
 
         collider->GetBoundingBox().Center = center;
@@ -144,6 +144,7 @@ void Map::CreateSlopeColliders(shared_ptr<Model> model, shared_ptr<Shader> debug
 
         collider->SetWorldBox(worldBox);
         collider->SetGround(true);
+        collider->SetBlocksCamera(true);
         object->AddComponent(collider);
 
         CUR_SCENE->Add(object);

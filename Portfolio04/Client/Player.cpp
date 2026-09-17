@@ -97,10 +97,9 @@ void Player::Init()
 	_weaponSocket = make_shared<GameObject>();
 	_weaponSocket->GetOrAddTransform();
 	_weaponSocket->AddComponent(socket);
-	// ★ Player의 자식으로 등록
-	_modelObject->AddChild(_weaponSocket);
+	_modelObject->AddChild(_weaponSocket); // ★ Player의 자식으로 등록
 
-	// Pipe
+	// Weapon- Pipe
 	auto pipe = make_shared<Pipe>();
 	pipe->Init();
 	pipe->GetOrAddTransform()->SetPosition(Vec3(200.f, 3000.f, 9000.f));
@@ -109,7 +108,7 @@ void Player::Init()
     EquipWeapon(pipe);
 
 	// * Player *
-	GetOrAddTransform()->SetPosition(Vec3{ 40.0f, 10.0f, 100.0f });
+	GetOrAddTransform()->SetPosition(Vec3{ 0.0f, 10.0f, 0.0f });
 	GetCharacterMovement()->SetMoveSpeed(5.0f);
 	AddComponent(playerController);
 	AddComponent(collider);
@@ -223,7 +222,6 @@ void Player::Stop()
 	ChangeState(PlayerState::Idle);
 }
 
-//이후 무기 시스템을 만드면 Attack시 무리와 연동하여 무기에서 데미지를 입히도록 변경해야함
 void Player::Attack()
 {
 	if (_state == PlayerState::PipeAttack)

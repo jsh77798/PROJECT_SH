@@ -21,7 +21,7 @@ Model::~Model()
 
 void Model::ReadMaterial(wstring filename)
 {
-	wstring fullPath = _texturePath + filename + L".xml";
+	wstring fullPath = _texturePath + filename + L"/" + filename + L".xml";
 	auto parentPath = filesystem::path(fullPath).parent_path();
 
 	tinyxml2::XMLDocument* document = new tinyxml2::XMLDocument();

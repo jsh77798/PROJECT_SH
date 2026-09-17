@@ -29,7 +29,8 @@ public:
 		Ray& ray,
 		shared_ptr<BaseCollider>& ignoreCollider,
 		OUT shared_ptr<BaseCollider>& hitCollider,
-		OUT float& distance);
+		OUT float& distance,
+		bool cameraOnly = false);
 
 	void PickUI();
 	shared_ptr<class GameObject> Pick(int32 screenX, int32 screenY);

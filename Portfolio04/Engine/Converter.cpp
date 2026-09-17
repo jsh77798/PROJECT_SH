@@ -90,7 +90,7 @@ void Converter::ExportModelData(wstring savePath)
 
 void Converter::ExportMaterialData(wstring savePath)
 {
-	wstring finalPath = _texturePath + savePath + L".xml";
+	wstring finalPath = _texturePath + savePath + L"/" + savePath + L".xml";
 	ReadMaterialData();
 	WriteMaterialData(finalPath);
 }

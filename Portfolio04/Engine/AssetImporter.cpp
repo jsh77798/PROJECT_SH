@@ -31,7 +31,7 @@ wstring AssetImporter::MeshImporter(wstring file)
 		converter->ExportModelData(converterFile);
 	}
 
-	if (!filesystem::exists(_texturePath + converterFile + L".xml"))
+	if (!filesystem::exists(_texturePath + converterFile + L"/" + converterFile + L".xml"))
 	{
 		shared_ptr<Converter> converter = make_shared<Converter>();
 

@@ -226,7 +226,7 @@ std::shared_ptr<GameObject> Scene::GetUICamera()
 	return nullptr;
 }
 
-bool Scene::RayCast(Ray& ray, shared_ptr<BaseCollider>& ignoreCollider, OUT shared_ptr<BaseCollider>& hitCollider, OUT float& distance)
+bool Scene::RayCast(Ray& ray, shared_ptr<BaseCollider>& ignoreCollider, OUT shared_ptr<BaseCollider>& hitCollider, OUT float& distance, bool cameraOnly)
 {
 	hitCollider = nullptr;
 	distance = FLT_MAX;
@@ -240,6 +240,9 @@ bool Scene::RayCast(Ray& ray, shared_ptr<BaseCollider>& ignoreCollider, OUT shar
 			continue;
 
 		if (collider == ignoreCollider)
+			continue;
+
+		if (cameraOnly && !collider->BlocksCamera())
 			continue;
 
 		float hitDistance = 0.f;

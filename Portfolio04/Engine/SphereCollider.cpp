@@ -80,24 +80,48 @@ SphereCollider::~SphereCollider()
 
 void SphereCollider::Update()
 {
-	//_boundingSphere.Center = GetGameObject()->GetTransform()->GetPosition();
+    //auto transform = GetGameObject()->GetTransform();
     //
-	//Vec3 scale = GetGameObject()->GetTransform()->GetScale();
-	//_boundingSphere.Radius = _radius * max(max(scale.x, scale.y), scale.z);
+    //Vec3 scale = transform->GetScale();
+    //
+    //float scaleMax = max(
+    //    max(fabsf(scale.x), fabsf(scale.y)),
+    //    fabsf(scale.z)
+    //);
+    //
+    //_boundingSphere.Radius = _radius * scaleMax;
+    //
+    //Vec3 center = transform->GetPosition();
+    //
+    //if (_useFootPosition)
+    //{
+    //    center.y += _boundingSphere.Radius;
+    //}
+    //
+    //_boundingSphere.Center = center;
 
     auto transform = GetGameObject()->GetTransform();
 
+    // 반지름 계산
     Vec3 scale = transform->GetScale();
 
-    float scaleMax = max(
-        max(fabsf(scale.x), fabsf(scale.y)),
-        fabsf(scale.z)
-    );
+    float scaleMax = fabsf(scale.x);
+
+    if (fabsf(scale.y) > scaleMax)
+        scaleMax = fabsf(scale.y);
+
+    if (fabsf(scale.z) > scaleMax)
+        scaleMax = fabsf(scale.z);
 
     _boundingSphere.Radius = _radius * scaleMax;
 
-    Vec3 center = transform->GetPosition();
+    // 로컬 오프셋을 월드 좌표로 변환
+    Vec3 center = XMVector3TransformCoord(
+        _centerOffset,
+        transform->GetWorldMatrix()
+    );
 
+    // 기존 발 기준 모드를 사용하는 경우에만 추가
     if (_useFootPosition)
     {
         center.y += _boundingSphere.Radius;
@@ -229,34 +253,66 @@ void SphereCollider::DebugRender()
         OutputDebugStringA(buffer);
     }
 
-    if (_shader == nullptr)
-        return;
+    //if (_shader == nullptr)
+    //    return;
+    //
+    //if (_vertexBuffer == nullptr)
+    //    return;
+    //
+    //_shader->PushGlobalData(
+    //    Camera::S_MatView,
+    //    Camera::S_MatProjection);
+    //
+    //TransformDesc desc;
+    //
+    //Matrix scale =
+    //    Matrix::CreateScale(_radius);
+    //
+    //desc.W =
+    //    scale * GetTransform()->GetWorldMatrix();
+    //
+    //_shader->PushTransformData(desc);
+    //
+    //_vertexBuffer->PushData();
+    //
+    //// ★ 디버그 렌더링은 선으로 그린다.
+    //DC->IASetPrimitiveTopology(
+    //    D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+    //
+    //_shader->Draw(
+    //    0,
+    //    0,
+    //    _vertexCount);
 
-    if (_vertexBuffer == nullptr)
+
+
+    if (_shader == nullptr || _vertexBuffer == nullptr)
         return;
 
     _shader->PushGlobalData(
         Camera::S_MatView,
-        Camera::S_MatProjection);
+        Camera::S_MatProjection
+    );
+
+    // 실제 충돌 검사에 사용하는 중심과 반지름
+    Vec3 center = _boundingSphere.Center;
+    float radius = _boundingSphere.Radius;
+
+    Matrix scale = Matrix::CreateScale(radius);
+
+    Matrix translation =
+        Matrix::CreateTranslation(center);
 
     TransformDesc desc;
-
-    Matrix scale =
-        Matrix::CreateScale(_radius);
-
-    desc.W =
-        scale * GetTransform()->GetWorldMatrix();
+    desc.W = scale * translation;
 
     _shader->PushTransformData(desc);
 
     _vertexBuffer->PushData();
 
-    // ★ 디버그 렌더링은 선으로 그린다.
     DC->IASetPrimitiveTopology(
-        D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+        D3D11_PRIMITIVE_TOPOLOGY_LINELIST
+    );
 
-    _shader->Draw(
-        0,
-        0,
-        _vertexCount);
+    _shader->Draw(0, 0, _vertexCount);
 }

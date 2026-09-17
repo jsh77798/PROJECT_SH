@@ -14,10 +14,7 @@ public:
     virtual void Awake() override;
     virtual void Update() override;
 
-    void SetEnemy(Enemy* Enemy)
-    {
-        _enemy = Enemy;
-    }
+    void SetEnemy(Enemy* enemy);
 
     void SetTarget(shared_ptr<Character> target)
     {
@@ -32,8 +29,6 @@ private:
     void UpdateAttack();
     void UpdateDead();
 
-    void Attack();
-
 private:
     Enemy* _enemy = nullptr;
     shared_ptr<HealthComponent> _health;
@@ -41,8 +36,7 @@ private:
 
 private:
     float _detectRange = 10.0f;
+    float _viewHalfAngle = 70.f;
     float _attackRange = 2.0f;
-    float _attackCooldown = 2.f;
-    float _attackTimer = 0.f;
-	bool _isDead = false;
+    float _attackFacingAngle = 20.f;
 };

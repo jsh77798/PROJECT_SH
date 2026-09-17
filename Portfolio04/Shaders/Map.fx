@@ -3,7 +3,7 @@
 #include "00. Render.fx"
 
 // 안개 설정: 거리는 엔진의 월드 단위
-static const float3 FogColor = float3(0.55f, 0.57f, 0.60f);
+static const float3 FogColor = float3(0.40f, 0.40f, 0.40f);
 static const float FogStart = 5.0f;
 static const float FogEnd = 30.0f;
 

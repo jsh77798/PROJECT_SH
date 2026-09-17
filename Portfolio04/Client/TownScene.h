@@ -18,5 +18,4 @@ public:
 private:
     shared_ptr<Shader> _shader;
     shared_ptr <Player> mPlayer;
-    shared_ptr <Enemy> mEnemy;
 };

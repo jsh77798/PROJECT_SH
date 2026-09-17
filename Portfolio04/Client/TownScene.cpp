@@ -3,6 +3,7 @@
 #include "Map.h"
 #include "Player.h"
 #include "Enemy.h"
+#include "Dog.h"
 #include "GameObject.h"
 #include "MeshRenderer.h"
 #include "Transform.h"
@@ -99,11 +100,11 @@ void TownScene::Start()
     // ==========================
     // Enemy »ý¼º
     // ==========================
-    mEnemy = make_shared<Enemy>();
-    mEnemy->SetTarget(mPlayer);
-    mEnemy->Init();
-    //mEnemy->Update();
-    CUR_SCENE->Add(mEnemy);
+    // Dog
+    auto mDog = make_shared<Dog>();
+    mDog->SetTarget(mPlayer);
+    mDog->Init();
+    CUR_SCENE->Add(mDog);
 
 
     // ==========================

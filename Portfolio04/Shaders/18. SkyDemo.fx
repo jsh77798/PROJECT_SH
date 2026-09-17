@@ -72,8 +72,8 @@ float4 PS(VS_OUT input) : SV_TARGET
     float3 color =
         DiffuseMap.Sample(LinearSampler, input.uv).rgb;
 
-
-    return float4(color, 1.f);
+    return float4(0.4f, 0.4f, 0.4f, 1.f);
+    //return float4(color, 1.f);
 }
 
 DepthStencilState SkyDepth

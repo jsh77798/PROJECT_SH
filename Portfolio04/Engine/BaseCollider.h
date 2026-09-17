@@ -20,6 +20,16 @@ public:
 	void SetGround(bool ground) { _isGround = ground; }
 	bool IsGround() const { return _isGround; }
 
+	void SetBlocksCamera(bool blocks)
+	{
+		_blocksCamera = blocks;
+	}
+
+	bool BlocksCamera() const
+	{
+		return _blocksCamera;
+	}
+
 	ColliderType GetColliderType() { return _colliderType; }
 
 	virtual void DebugRender() {}
@@ -27,5 +37,6 @@ public:
 protected:
 	ColliderType _colliderType;
 	bool _isGround = false;
+	bool _blocksCamera = false;
 };
 

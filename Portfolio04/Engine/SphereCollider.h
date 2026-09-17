@@ -17,6 +17,10 @@ public:
 		_useFootPosition = value;
 	}
 
+	void SetCenterOffset(const Vec3& offset)
+	{
+		_centerOffset = offset;
+	}
 
 	virtual void DebugRender() override;
 
@@ -30,4 +34,5 @@ private:
 	shared_ptr<VertexBuffer> _vertexBuffer;
 	uint32 _vertexCount = 0;
 	bool _useFootPosition = false;
+	Vec3 _centerOffset = Vec3::Zero;
 };

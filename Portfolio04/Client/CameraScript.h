@@ -20,5 +20,13 @@ private:
 	bool _followInitialized = false;
 	float _followYaw = 0.f;
 	float _rotationFollowSpeed = 3.f;
+
+	float _lookHeight = 0.0f;   
+	float _cameraHeight = 0.8f;
+
+	float _cameraWallMargin = 0.2f;
+	float _cameraReturnSpeed = 5.f;
+	float _currentArmLength = 0.f;
+	bool _armInitialized = false;
 };
 

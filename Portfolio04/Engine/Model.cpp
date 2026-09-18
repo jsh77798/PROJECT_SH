@@ -41,41 +41,103 @@ void Model::ReadMaterial(wstring filename)
 		material->SetName(Utils::ToWString(node->GetText()));
 
 		// Diffuse Texture
+		//node = node->NextSiblingElement();
+		//if (node->GetText())
+		//{
+		//	wstring textureStr = Utils::ToWString(node->GetText());
+		//	if (textureStr.length() > 0)
+		//	{
+		//		auto texture = RESOURCES->GetOrAddTexture(textureStr, (parentPath / textureStr).wstring());
+		//		material->SetDiffuseMap(texture);
+		//	}
+		//}
 		node = node->NextSiblingElement();
+
 		if (node->GetText())
 		{
 			wstring textureStr = Utils::ToWString(node->GetText());
-			if (textureStr.length() > 0)
+
+			if (!textureStr.empty())
 			{
-				auto texture = RESOURCES->GetOrAddTexture(textureStr, (parentPath / textureStr).wstring());
+				wstring texturePath = filesystem::absolute(
+					parentPath / textureStr
+				).lexically_normal().wstring();
+
+				auto texture = RESOURCES->GetOrAddTexture(
+					texturePath,
+					texturePath
+				);
+
 				material->SetDiffuseMap(texture);
 			}
 		}
 
+
+
 		// Specular Texture
+		//node = node->NextSiblingElement();
+		//if (node->GetText())
+		//{
+		//	wstring texture = Utils::ToWString(node->GetText());
+		//	if (texture.length() > 0)
+		//	{
+		//		wstring textureStr = Utils::ToWString(node->GetText());
+		//		if (textureStr.length() > 0)
+		//		{
+		//			auto texture = RESOURCES->GetOrAddTexture(textureStr, (parentPath / textureStr).wstring());
+		//			material->SetSpecularMap(texture);
+		//		}
+		//	}
+		//}
 		node = node->NextSiblingElement();
+
 		if (node->GetText())
 		{
-			wstring texture = Utils::ToWString(node->GetText());
-			if (texture.length() > 0)
+			wstring textureStr = Utils::ToWString(node->GetText());
+
+			if (!textureStr.empty())
 			{
-				wstring textureStr = Utils::ToWString(node->GetText());
-				if (textureStr.length() > 0)
-				{
-					auto texture = RESOURCES->GetOrAddTexture(textureStr, (parentPath / textureStr).wstring());
-					material->SetSpecularMap(texture);
-				}
+				wstring texturePath = filesystem::absolute(
+					parentPath / textureStr
+				).lexically_normal().wstring();
+
+				auto texture = RESOURCES->GetOrAddTexture(
+					texturePath,
+					texturePath
+				);
+
+				material->SetSpecularMap(texture);
 			}
 		}
 
 		// Normal Texture
+		//node = node->NextSiblingElement();
+		//if (node->GetText())
+		//{
+		//	wstring textureStr = Utils::ToWString(node->GetText());
+		//	if (textureStr.length() > 0)
+		//	{
+		//		auto texture = RESOURCES->GetOrAddTexture(textureStr, (parentPath / textureStr).wstring());
+		//		material->SetNormalMap(texture);
+		//	}
+		//}
 		node = node->NextSiblingElement();
+
 		if (node->GetText())
 		{
 			wstring textureStr = Utils::ToWString(node->GetText());
-			if (textureStr.length() > 0)
+
+			if (!textureStr.empty())
 			{
-				auto texture = RESOURCES->GetOrAddTexture(textureStr, (parentPath / textureStr).wstring());
+				wstring texturePath = filesystem::absolute(
+					parentPath / textureStr
+				).lexically_normal().wstring();
+
+				auto texture = RESOURCES->GetOrAddTexture(
+					texturePath,
+					texturePath
+				);
+
 				material->SetNormalMap(texture);
 			}
 		}

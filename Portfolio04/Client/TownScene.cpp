@@ -4,6 +4,7 @@
 #include "Player.h"
 #include "Enemy.h"
 #include "Dog.h"
+#include "CLD1.h"
 #include "GameObject.h"
 #include "MeshRenderer.h"
 #include "Transform.h"
@@ -105,6 +106,11 @@ void TownScene::Start()
     mDog->SetTarget(mPlayer);
     mDog->Init();
     CUR_SCENE->Add(mDog);
+    // CLD1
+    auto mCLD1 = make_shared<CLD1>();
+    mCLD1->SetTarget(mPlayer);
+    mCLD1->Init();
+    CUR_SCENE->Add(mCLD1);
 
 
     // ==========================

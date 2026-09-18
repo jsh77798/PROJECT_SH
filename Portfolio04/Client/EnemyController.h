@@ -24,6 +24,7 @@ public:
 private:
     bool CanDetectPlayer();
     bool CanSeePlayer();
+    void UpdateLostTarget();
     void UpdateIdle();
     void UpdateChase();
     void UpdateAttack();

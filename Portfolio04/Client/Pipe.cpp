@@ -11,6 +11,7 @@
 #include "SphereCollider.h"
 #include "AABBBoxCollider.h"
 #include "OBBBoxCollider.h"
+#include "Enemy.h"
 
 Pipe::Pipe()
 {
@@ -115,13 +116,34 @@ void Pipe::Attack()
 
         auto health = character->GetHealthComponent();
 
-        if (health == nullptr)
+        if (health == nullptr || health->IsDead())
             continue;
 
         // 데미지 처리 전에 등록
         _hitObjects.insert(object);
 
-        health->TakeDamage(GetDamage());
+        health->TakeDamage(
+            GetDamage(),
+            owner->GetTransform()->GetPosition()
+        );
+
+        //health->TakeDamage(GetDamage());
+        //
+        //auto enemy = dynamic_pointer_cast<Enemy>(object);
+        //
+        //if (enemy)
+        //{
+        //    // 치명타는 피격 모션 대신 사망 처리
+        //    if (health->IsDead())
+        //    {
+        //        enemy->Death();
+        //    }
+        //    else
+        //    {
+        //        // owner는 기존 _owner.lock()으로 얻은 공격자
+        //        enemy->Hit(owner->GetTransform()->GetPosition());
+        //    }
+        //}
     }
 }
 

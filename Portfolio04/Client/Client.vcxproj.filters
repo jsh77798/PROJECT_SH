@@ -96,6 +96,15 @@
     <ClCompile Include="Dog.cpp">
       <Filter>Game\Character\Enemy</Filter>
     </ClCompile>
+    <ClCompile Include="CLD1.cpp">
+      <Filter>Game\Character\Enemy</Filter>
+    </ClCompile>
+    <ClCompile Include="CLD2.cpp">
+      <Filter>Game\Character\Enemy</Filter>
+    </ClCompile>
+    <ClCompile Include="CLD3.cpp">
+      <Filter>Game\Character\Enemy</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -153,6 +162,15 @@
       <Filter>Game\Map</Filter>
     </ClInclude>
     <ClInclude Include="Dog.h">
+      <Filter>Game\Character\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="CLD1.h">
+      <Filter>Game\Character\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="CLD2.h">
+      <Filter>Game\Character\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="CLD3.h">
       <Filter>Game\Character\Enemy</Filter>
     </ClInclude>
   </ItemGroup>

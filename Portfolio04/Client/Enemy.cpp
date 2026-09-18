@@ -21,6 +21,42 @@ Enemy::~Enemy()
 void Enemy::Init()
 {
     InitCharacter();
+
+    // Enemy는 make_shared로 생성한 뒤 Init()을 호출해야 합니다.
+    weak_ptr<Enemy> weakSelf =
+        static_pointer_cast<Enemy>(shared_from_this());
+
+    _health->SetOnHit(
+        [weakSelf](
+            const Vec3& attackerPosition,
+            bool hasAttackerPosition)
+        {
+            auto enemy = weakSelf.lock();
+
+            if (!enemy)
+                return;
+
+            if (hasAttackerPosition)
+            {
+                enemy->Hit(attackerPosition);
+            }
+            else
+            {
+                // 위치 정보가 없으면 기본 앞 피격
+                enemy->Hit();
+            }
+        }
+    );
+
+    _health->SetOnDeath(
+        [weakSelf]()
+        {
+            auto enemy = weakSelf.lock();
+
+            if (enemy)
+                enemy->Death();
+        }
+    );
 }
 
 void Enemy::SetTarget(shared_ptr<Character> target)
@@ -58,12 +94,31 @@ bool Enemy::PlayState(EnemyState state, bool restart)
     if (!animator)
         return false;
 
-    auto it = _animMap.find(state);
+    string animationName;
 
-    if (it == _animMap.end())
-        return false;
+    if (state == EnemyState::Hit &&
+        !_currentHitAnimation.empty())
+    {
+        animationName = _currentHitAnimation;
+    }
+    // 일어난 상태에서 Idle 요청 → 서 있는 Idle
+    else if (state == EnemyState::Idle &&
+        _hasAwakened &&
+        !_awakeIdleAnimation.empty())
+    {
+        animationName = _awakeIdleAnimation;
+    }
+    else
+    {
+        auto it = _animMap.find(state);
 
-    animator->Play(it->second);
+        if (it == _animMap.end())
+            return false;
+
+        animationName = it->second;
+    }
+
+    animator->Play(animationName);
 
     _state = state;
     _stateInitialized = true;
@@ -79,6 +134,14 @@ void Enemy::ChangeState(EnemyState state)
     {
     case EnemyState::Idle:
         Stop();
+        break;
+
+    case EnemyState::WakeUp:
+        WakeUp();
+        break;
+
+    case EnemyState::LieDown:
+        LieDown();
         break;
 
     case EnemyState::Move:
@@ -113,6 +176,28 @@ void Enemy::Stop()
         return;
 
     PlayState(EnemyState::Idle);
+}
+
+void Enemy::WakeUp()
+{
+    if (IsActionLocked() || !NeedsWakeUp())
+        return;
+
+    if (PlayState(EnemyState::WakeUp))
+    {
+        GetCharacterMovement()->ClearMovementInput();
+    }
+}
+
+void Enemy::LieDown()
+{
+    if (IsActionLocked() || !NeedsLieDown())
+        return;
+
+    if (PlayState(EnemyState::LieDown))
+    {
+        GetCharacterMovement()->ClearMovementInput();
+    }
 }
 
 void Enemy::Attack()
@@ -158,30 +243,123 @@ void Enemy::EndAttack()
 
 void Enemy::Hit()
 {
+    //if (IsDead())
+    //    return;
+    //
+    //// 이번 구현에서는 재피격으로 Hit를 계속 재시작하지 않음
+    //if (_state == EnemyState::Hit)
+    //    return;
+    //
+    //const bool wasAttacking =
+    //    _state == EnemyState::Attack;
+    //
+    //CancelAttack();
+    //
+    //if (PlayState(EnemyState::Hit))
+    //    return;
+    //
+    //// 피격 애니메이션이 없어도 공격은 취소
+    //if (wasAttacking)
+    //{
+    //    if (!PlayState(EnemyState::Idle))
+    //    {
+    //        _state = EnemyState::Idle;
+    //        _stateInitialized = false;
+    //    }
+    //}
+
+    // 공격 위치를 모르면 앞에서 맞은 것으로 처리
+    Hit(
+        GetTransform()->GetPosition() +
+        GetTransform()->GetForward()
+    );
+}
+
+void Enemy::Hit(const Vec3& attackerPosition)
+{
     if (IsDead())
         return;
 
-    // 이번 구현에서는 재피격으로 Hit를 계속 재시작하지 않음
+    // 현재 Hit 도중 다시 맞아도 이번에는 모션을 재시작하지 않음
+    // 체력 감소는 공격 측에서 별도로 적용됩니다.
     if (_state == EnemyState::Hit)
         return;
 
-    const bool wasAttacking =
-        _state == EnemyState::Attack;
+    Vec3 toAttacker =
+        attackerPosition - GetTransform()->GetPosition();
 
-    CancelAttack();
+    toAttacker.y = 0.f;
 
-    if (PlayState(EnemyState::Hit))
-        return;
+    Vec3 forward = GetTransform()->GetForward();
+    forward.y = 0.f;
 
-    // 피격 애니메이션이 없어도 공격은 취소
-    if (wasAttacking)
+    bool hitFromFront = true;
+
+    if (toAttacker.LengthSquared() > 0.000001f &&
+        forward.LengthSquared() > 0.000001f)
     {
-        if (!PlayState(EnemyState::Idle))
+        toAttacker.Normalize();
+        forward.Normalize();
+
+        hitFromFront = forward.Dot(toAttacker) >= 0.f;
+    }
+
+    //_currentHitAnimation = hitFromFront
+    //    ? _frontHitAnimation
+    //    : _backHitAnimation;
+    //
+    //// 해당 방향의 모션이 없으면 반대쪽으로 대체
+    //if (_currentHitAnimation.empty())
+    //{
+    //    _currentHitAnimation = hitFromFront
+    //        ? _backHitAnimation
+    //        : _frontHitAnimation;
+    //}
+
+    // 누운 Idle인지 확인
+// WakeUp이 없는 일반 적은 제외
+    bool isLyingIdle =
+        _state == EnemyState::Idle &&
+        NeedsWakeUp();
+    
+    if (_isThanatosis)
+    {
+        // 누운 피격 등록 누락을 바로 확인
+        if (_ThanatosisHitAnimation.empty())
         {
-            _state = EnemyState::Idle;
-            _stateInitialized = false;
+            OutputDebugStringA(
+                "Enemy Hit: lying hit animation is missing\n"
+            );
+            return;
+        }
+
+        _currentHitAnimation = _ThanatosisHitAnimation;
+    }
+    else
+    {
+        // 서 있을 때는 앞·뒤 피격 선택
+        _currentHitAnimation = hitFromFront
+            ? _frontHitAnimation
+            : _backHitAnimation;
+
+        if (_currentHitAnimation.empty())
+        {
+            _currentHitAnimation = hitFromFront
+                ? _backHitAnimation
+                : _frontHitAnimation;
         }
     }
+
+    EnemyState previousState = _state;
+
+    // 애니메이션 등록이 안 됐다면 기존 행동 유지
+    if (!PlayState(EnemyState::Hit))
+        return;
+
+    _stateBeforeHit = previousState;
+
+    CancelAttack();
+    GetCharacterMovement()->ClearMovementInput();
 }
 
 void Enemy::Death()
@@ -225,7 +403,7 @@ void Enemy::Update()
             !animator ||
             animator->IsAnimationFinished())
         {
-            CUR_SCENE->Remove(shared_from_this());
+            //CUR_SCENE->Remove(shared_from_this());
         }
 
         return;
@@ -234,15 +412,57 @@ void Enemy::Update()
     if (!animator)
         return;
 
+    // WakeUp 종료
+    if (_state == EnemyState::WakeUp)
+    {
+        if (animator->IsAnimationFinished())
+        {
+            _hasAwakened = true;
+            _isThanatosis = false;
+
+            PlayState(EnemyState::Move);
+        }
+
+        return;
+    }
+
+    if (_state == EnemyState::LieDown)
+    {
+        if (animator->IsAnimationFinished())
+        {
+            // 반드시 Idle을 재생하기 전에 변경
+            _hasAwakened = false;
+            _isThanatosis = true;
+
+            PlayState(EnemyState::Idle);
+        }
+
+        return;
+    }
+
     // 피격 종료
     if (_state == EnemyState::Hit)
     {
         if (animator->IsAnimationFinished())
         {
-            if (!PlayState(EnemyState::Idle))
+            EnemyState nextState = EnemyState::Idle;
+
+            // 피격으로 중단됐던 자세 전환은 처음부터 다시 재생
+            if (_stateBeforeHit == EnemyState::WakeUp ||
+                _stateBeforeHit == EnemyState::LieDown)
             {
-                _state = EnemyState::Idle;
-                _stateInitialized = false;
+                nextState = _stateBeforeHit;
+            }
+
+            _currentHitAnimation.clear();
+
+            if (!PlayState(nextState))
+            {
+                if (!PlayState(EnemyState::Idle))
+                {
+                    _state = EnemyState::Idle;
+                    _stateInitialized = false;
+                }
             }
         }
 
@@ -372,5 +592,9 @@ void Enemy::CheckAttackHit()
     // TakeDamage에서 다른 처리가 발생하기 전에 기록
     _attackHitApplied = true;
 
-    health->TakeDamage(_damage);
+    //health->TakeDamage(_damage);
+    health->TakeDamage(
+        _damage,
+        GetTransform()->GetPosition()
+    );
 }

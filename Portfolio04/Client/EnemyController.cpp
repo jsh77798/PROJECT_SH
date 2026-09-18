@@ -57,7 +57,8 @@ void EnemyController::Update()
 
     if (!_player)
     {
-        UpdateIdle();
+        //UpdateIdle();
+        UpdateLostTarget();
         return;
     }
 
@@ -65,13 +66,22 @@ void EnemyController::Update()
 
     if (!playerHealth || playerHealth->IsDead())
     {
-        UpdateIdle();
+        //UpdateIdle();
+        UpdateLostTarget();
         return;
     }
 
     if (!CanSeePlayer())
     {
-        UpdateIdle();
+        //UpdateIdle();
+        UpdateLostTarget();
+        return;
+    }
+
+    if (_enemy->NeedsWakeUp())
+    {
+        movement->ClearMovementInput();
+        _enemy->WakeUp();
         return;
     }
 
@@ -175,6 +185,20 @@ bool EnemyController::CanSeePlayer()
         return false;
 
     return hitCollider->GetGameObject() == _player;
+}
+
+void EnemyController::UpdateLostTarget()
+{
+    _enemy->GetCharacterMovement()->ClearMovementInput();
+
+    if (_enemy->NeedsLieDown())
+    {
+        _enemy->LieDown();
+    }
+    else
+    {
+        _enemy->Stop();
+    }
 }
 
 void EnemyController::UpdateIdle()

@@ -7,9 +7,12 @@ class EnemyController;
 enum class EnemyState : uint8
 {
     Idle,
+    WakeUp,
+    LieDown,
     Move,
     Attack,
     Hit,
+    Thanatosis,
     Dead
 };
 
@@ -26,14 +29,29 @@ public:
 
 	void Move();
     void Stop();
+    void WakeUp(); //CLD1, CLD2, CLD3...
+    void LieDown(); //CLD1, CLD2, CLD3...
     void Attack();
     void EndAttack();
     void Death();
     void Hit();
+    void Hit(const Vec3& attackerPosition);
 
     void SetTarget(shared_ptr<Character> target);
 
     EnemyState GetState() const { return _state; }
+
+    bool NeedsWakeUp() const
+    {
+        return !_hasAwakened &&
+            _animMap.find(EnemyState::WakeUp) != _animMap.end();
+    }
+
+    bool NeedsLieDown() const
+    {
+        return _hasAwakened &&
+            _animMap.find(EnemyState::LieDown) != _animMap.end();
+    }
 
     bool IsDead() const
     {
@@ -44,7 +62,9 @@ public:
     {
         return _state == EnemyState::Attack ||
             _state == EnemyState::Hit ||
-            _state == EnemyState::Dead;
+            _state == EnemyState::Dead ||
+            _state == EnemyState::WakeUp ||
+            _state == EnemyState::LieDown;
     }
 
     bool CanAttack() const;
@@ -79,7 +99,7 @@ protected:
     bool _attackHitApplied = false;
 
     // 공격 종료 또는 취소 후 대기 시간
-    float _attackCooldown = 1.f;
+    float _attackCooldown = 0.25f;
     float _attackCooldownRemaining = 0.f;
 
     // 공격 판정 구: 캐릭터 원점을 기준으로 월드 단위
@@ -87,6 +107,19 @@ protected:
     float _hitForwardOffset = 0.7f;
     float _hitHeightOffset = 0.f;
 
+    bool _hasAwakened = false;
+    string _awakeIdleAnimation;
     bool _hasDeathAnimation = false;
+    bool _isThanatosis = false;
+
+    // Hit 애니메이션
+    string _frontHitAnimation;
+    string _backHitAnimation;
+    string _ThanatosisHitAnimation;
+    string _currentHitAnimation;
+
+
+    // 피격 전에 일어나거나 눕는 중이었는지 기억
+    EnemyState _stateBeforeHit = EnemyState::Idle;
 };
 

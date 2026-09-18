@@ -24,6 +24,9 @@
     <ClInclude Include="CameraController.h" />
     <ClInclude Include="CameraScript.h" />
     <ClInclude Include="Character.h" />
+    <ClInclude Include="CLD1.h" />
+    <ClInclude Include="CLD2.h" />
+    <ClInclude Include="CLD3.h" />
     <ClInclude Include="Dog.h" />
     <ClInclude Include="Enemy.h" />
     <ClInclude Include="EnemyController.h" />
@@ -45,6 +48,9 @@
     <ClCompile Include="CameraController.cpp" />
     <ClCompile Include="CameraScript.cpp" />
     <ClCompile Include="Character.cpp" />
+    <ClCompile Include="CLD1.cpp" />
+    <ClCompile Include="CLD2.cpp" />
+    <ClCompile Include="CLD3.cpp" />
     <ClCompile Include="Dog.cpp" />
     <ClCompile Include="Enemy.cpp" />
     <ClCompile Include="EnemyController.cpp" />

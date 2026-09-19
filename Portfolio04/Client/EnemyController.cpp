@@ -3,6 +3,7 @@
 #include "Transform.h"
 #include "HealthComponent.h"
 #include "BaseCollider.h"
+#include "SphereCollider.h"
 #include "Scene.h"
 
 void EnemyController::SetEnemy(Enemy* enemy)
@@ -119,6 +120,76 @@ bool EnemyController::CanDetectPlayer()
 
 bool EnemyController::CanSeePlayer()
 {
+    //if (!CanDetectPlayer())
+    //    return false;
+    //
+    //Vec3 enemyPos =
+    //    _enemy->GetTransform()->GetPosition();
+    //
+    //Vec3 playerPos =
+    //    _player->GetTransform()->GetPosition();
+    //
+    //Vec3 horizontalDirection = playerPos - enemyPos;
+    //horizontalDirection.y = 0.f;
+    //
+    //// 수평 방향이 있을 때만 시야각 검사
+    //if (horizontalDirection.LengthSquared() > 0.000001f)
+    //{
+    //    horizontalDirection.Normalize();
+    //
+    //    Vec3 forward =
+    //        _enemy->GetTransform()->GetForward();
+    //
+    //    forward.y = 0.f;
+    //
+    //    if (forward.LengthSquared() < 0.000001f)
+    //        return false;
+    //
+    //    forward.Normalize();
+    //
+    //    // 기존과 동일: 정면 기준 좌우 45도
+    //    float cosFov =
+    //        std::cos(XMConvertToRadians(_viewHalfAngle));
+    //
+    //    if (forward.Dot(horizontalDirection) < cosFov)
+    //        return false;
+    //}
+    //
+    //// 레이는 높이 차이를 포함한 실제 방향으로 검사
+    //Vec3 rayDirection = playerPos - enemyPos;
+    //float targetDistance = rayDirection.Length();
+    //
+    //if (targetDistance < 0.0001f)
+    //    return true;
+    //
+    //rayDirection /= targetDistance;
+    //
+    //Ray ray;
+    //ray.position = enemyPos;
+    //ray.direction = rayDirection;
+    //
+    //shared_ptr<BaseCollider> ignoreCollider =
+    //    _enemy->GetCollider();
+    //
+    //shared_ptr<BaseCollider> hitCollider;
+    //float hitDistance = 0.f;
+    //
+    //// 카메라용 필터를 사용하지 않음
+    //bool hit = CUR_SCENE->RayCast(
+    //    ray,
+    //    ignoreCollider,
+    //    hitCollider,
+    //    hitDistance
+    //);
+    //
+    //if (!hit || !hitCollider)
+    //    return false;
+    //
+    //return hitCollider->GetGameObject() == _player;
+
+    if (!_enemy || !_player)
+        return false;
+
     if (!CanDetectPlayer())
         return false;
 
@@ -131,7 +202,7 @@ bool EnemyController::CanSeePlayer()
     Vec3 horizontalDirection = playerPos - enemyPos;
     horizontalDirection.y = 0.f;
 
-    // 수평 방향이 있을 때만 시야각 검사
+    // 1. 시야각 검사
     if (horizontalDirection.LengthSquared() > 0.000001f)
     {
         horizontalDirection.Normalize();
@@ -146,7 +217,6 @@ bool EnemyController::CanSeePlayer()
 
         forward.Normalize();
 
-        // 기존과 동일: 정면 기준 좌우 45도
         float cosFov =
             std::cos(XMConvertToRadians(_viewHalfAngle));
 
@@ -154,7 +224,28 @@ bool EnemyController::CanSeePlayer()
             return false;
     }
 
-    // 레이는 높이 차이를 포함한 실제 방향으로 검사
+    // 2. 실제 콜라이더 중심을 기준으로 레이 생성
+    auto enemyCollider = _enemy->GetCollider();
+    auto playerCollider = _player->GetCollider();
+
+    if (!enemyCollider || !playerCollider)
+        return false;
+
+    enemyCollider->Update();
+    playerCollider->Update();
+
+    if (auto sphere =
+        dynamic_pointer_cast<SphereCollider>(enemyCollider))
+    {
+        enemyPos = sphere->GetBoundingSphere().Center;
+    }
+
+    if (auto sphere =
+        dynamic_pointer_cast<SphereCollider>(playerCollider))
+    {
+        playerPos = sphere->GetBoundingSphere().Center;
+    }
+
     Vec3 rayDirection = playerPos - enemyPos;
     float targetDistance = rayDirection.Length();
 
@@ -167,16 +258,24 @@ bool EnemyController::CanSeePlayer()
     ray.position = enemyPos;
     ray.direction = rayDirection;
 
-    shared_ptr<BaseCollider> ignoreCollider =
-        _enemy->GetCollider();
+    // 3. 자신과 다른 몬스터를 시야 검사에서 제외
+    auto shouldIgnore =
+        [this](const shared_ptr<GameObject>& object) -> bool
+        {
+            // 타깃은 제외하지 않음
+            if (object == _player)
+                return false;
+
+            return dynamic_pointer_cast<Enemy>(object) != nullptr;
+        };
 
     shared_ptr<BaseCollider> hitCollider;
     float hitDistance = 0.f;
 
-    // 카메라용 필터를 사용하지 않음
-    bool hit = CUR_SCENE->RayCast(
+    bool hit = CUR_SCENE->RayCastFiltered(
         ray,
-        ignoreCollider,
+        targetDistance,
+        shouldIgnore,
         hitCollider,
         hitDistance
     );
@@ -184,7 +283,8 @@ bool EnemyController::CanSeePlayer()
     if (!hit || !hitCollider)
         return false;
 
-    return hitCollider->GetGameObject() == _player;
+    // 벽이 먼저 맞으면 false, 플레이어가 먼저 맞으면 true
+    return hitCollider == playerCollider;
 }
 
 void EnemyController::UpdateLostTarget()

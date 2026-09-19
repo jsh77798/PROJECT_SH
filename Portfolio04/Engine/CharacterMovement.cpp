@@ -20,6 +20,12 @@ void CharacterMovement::Update()
 
 void CharacterMovement::LateUpdate()
 {
+    if (_movementPaused)
+    {
+        ClearMovementInput();
+        return;
+    }
+
     TickMovement();
 }
 
@@ -161,6 +167,62 @@ void CharacterMovement::RotateTo(const Vec3& direction)
     rotation.y = currentAngle;
 
     GetTransform()->SetLocalRotation(rotation);
+}
+
+Vec3 CharacterMovement::GetFootPosition()
+{
+    Vec3 position = GetTransform()->GetPosition();
+
+    position.y -= _footOffset + _groundOffset;
+
+    return position;
+}
+
+bool CharacterMovement::TeleportToGroundPoint(const Vec3& groundPosition, float yaw)
+{
+    auto transform = GetTransform();
+
+    const Vec3 oldPosition = transform->GetPosition();
+    const Vec3 oldRotation = transform->GetLocalRotation();
+
+    // Empty 근처에 실제 바닥이 있는지 검사
+    float groundY = 0.f;
+
+    if (!FindGroundInRange(
+        groundPosition,
+        groundPosition.y - 0.5f,
+        groundPosition.y + 0.5f,
+        groundY))
+    {
+        OutputDebugStringA(
+            "Door: no ground near exit.\n"
+        );
+        return false;
+    }
+
+    Vec3 position = groundPosition;
+    position.y = groundY + _footOffset + _groundOffset;
+
+    transform->SetLocalRotation(Vec3(0.f, yaw, 0.f));
+    SetPositionAndSync(position);
+
+    // 출구가 벽이나 다른 캐릭터에 막혀 있으면 이동 취소
+    if (HasBlockingCollision())
+    {
+        transform->SetLocalRotation(oldRotation);
+        SetPositionAndSync(oldPosition);
+
+        OutputDebugStringA(
+            "Door: exit is blocked.\n"
+        );
+        return false;
+    }
+
+    _inputVector = Vec3::Zero;
+    _verticalVelocity = 0.f;
+    _isGrounded = true;
+
+    return true;
 }
 
 void CharacterMovement::TickMovement()

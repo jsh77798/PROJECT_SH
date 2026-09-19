@@ -222,52 +222,6 @@ void Model::ReadModel(wstring filename)
 		}
 	}
 
-	//// Mesh
-	//{
-	//	const uint32 count = file->Read<uint32>();
-	//
-	//	for (uint32 i = 0; i < count; i++)
-	//	{
-	//		shared_ptr<ModelMesh> mesh = make_shared<ModelMesh>();
-	//
-	//		mesh->name = Utils::ToWString(file->Read<string>());
-	//		mesh->boneIndex = file->Read<int32>();
-	//
-	//		// Material
-	//		mesh->materialName = Utils::ToWString(file->Read<string>());
-	//
-	//		//VertexData
-	//		{
-	//			const uint32 count = file->Read<uint32>();
-	//			vector<ModelVertexType> vertices;
-	//			vertices.resize(count);
-	//
-	//			void* data = vertices.data();
-	//			file->Read(&data, sizeof(ModelVertexType) * count);
-	//			mesh->geometry->AddVertices(vertices);
-	//		}
-	//
-	//		//IndexData
-	//		{
-	//			const uint32 count = file->Read<uint32>();
-	//
-	//			vector<uint32> indices;
-	//			indices.resize(count);
-	//
-	//			void* data = indices.data();
-	//			file->Read(&data, sizeof(uint32) * count);
-	//			mesh->geometry->AddIndices(indices);
-	//		}
-	//
-	//		mesh->CreateBuffers();
-	//
-	//		_meshes.push_back(mesh);
-	//	}
-	//}
-	//
-	//BindCacheInfo();
-
-
 	// Mesh
 	{
 		_collisionBoxes.clear();
@@ -314,17 +268,6 @@ void Model::ReadModel(wstring filename)
 				);
 			}
 
-			//const bool isCollisionMesh =
-			//	mesh->name.rfind(L"COL_", 0) == 0;
-			//
-			//if (isCollisionMesh)
-			//{
-			//	AddCollisionBox(mesh->boneIndex, vertices);
-			//
-			//	// 렌더링 메시 목록에는 추가하지 않음
-			//	continue;
-			//}
-
 			if (mesh->name.rfind(L"COL_Slope_", 0) == 0)
 			{
 				AddCollisionSlope(mesh->boneIndex, vertices);
@@ -346,6 +289,12 @@ void Model::ReadModel(wstring filename)
 	}
 
 	BindCacheInfo();
+
+	wstring message = L"\n[ReadModel] " + fullPath + L"\n";
+	OutputDebugStringW(message.c_str());
+
+	BuildSpawnPoints();
+	BuildDoorPoints();
 }
 
 void Model::ReadAnimation(wstring filename)
@@ -611,5 +560,91 @@ void Model::AddCollisionSlope(int32 boneIndex, const vector<ModelVertexType>& ve
 
 		if (!duplicate)
 			slope->points.push_back(point);
+	}
+}
+
+void Model::BuildSpawnPoints()
+{
+	//_spawnPoints.clear();
+	//
+	//for (const auto& bone : _bones)
+	//{
+	//	if (!bone)
+	//		continue;
+	//
+	//	// 이름이 SPAWN_으로 시작하는 노드만 수집
+	//	if (bone->name.rfind(L"SPAWN_", 0) != 0)
+	//		continue;
+	//
+	//	ModelSpawnPoint point;
+	//	point.name = bone->name;
+	//	point.transform = bone->transform;
+	//
+	//	_spawnPoints.push_back(point);
+	//
+	//	wstring message =
+	//		L"Spawn point loaded: " + point.name + L"\n";
+	//
+	//	OutputDebugStringW(message.c_str());
+	//}
+	//
+	//if (_spawnPoints.empty())
+	//{
+	//	OutputDebugStringA(
+	//		"Spawn points: none found in model\n"
+	//	);
+	//}
+
+
+	_spawnPoints.clear();
+
+	for (const auto& bone : _bones)
+	{
+		if (!bone)
+			continue;
+
+		// 임시 확인용: 저장된 모든 노드 이름 출력
+		wstring nodeLog = L"  Node: " + bone->name + L"\n";
+		OutputDebugStringW(nodeLog.c_str());
+
+		if (bone->name.rfind(L"SPAWN_", 0) != 0)
+			continue;
+
+		ModelSpawnPoint point;
+		point.name = bone->name;
+		point.transform = bone->transform;
+
+		_spawnPoints.push_back(point);
+
+		wstring message =
+			L"  Spawn point loaded: " + point.name + L"\n";
+		OutputDebugStringW(message.c_str());
+	}
+
+	if (_spawnPoints.empty())
+	{
+		OutputDebugStringA(
+			"  Spawn points: none found in model\n"
+		);
+	}
+}
+
+void Model::BuildDoorPoints()
+{
+	_doorPoints.clear();
+
+	for (const auto& bone : _bones)
+	{
+		if (!bone)
+			continue;
+
+		if (bone->name.rfind(L"DOOR_", 0) != 0)
+			continue;
+
+		ModelSpawnPoint point;
+		point.name = bone->name;
+		point.transform = bone->transform;
+
+		_doorPoints.push_back(point);
 	}
 }

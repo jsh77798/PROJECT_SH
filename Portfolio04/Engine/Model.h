@@ -20,6 +20,14 @@ struct ModelCollisionSlope
 	vector<Vec3> points;
 };
 
+struct ModelSpawnPoint
+{
+	wstring name;
+
+	// 기존 충돌 처리와 같은 맵 모델 기준 행렬
+	Matrix transform = Matrix::Identity;
+};
+
 class Model : public enable_shared_from_this<Model>
 {
 public:
@@ -57,11 +65,24 @@ public:
 
 	int32 FindAnimation(wstring filename);
 
+	const vector<ModelSpawnPoint>& GetSpawnPoints() const
+	{
+		return _spawnPoints;
+	}
+
+	const vector<ModelSpawnPoint>& GetDoorPoints() const
+	{
+		return _doorPoints;
+	}
+
 private:
 	void BindCacheInfo();
 
 	void AddCollisionBox(int32 boneIndex, const vector<ModelVertexType>& vertices);
 	void AddCollisionSlope(int32 boneIndex, const vector<ModelVertexType>& vertices);
+
+	void BuildSpawnPoints();
+	void BuildDoorPoints();
 
 private:
 	wstring _modelPath = L"../Resources/Models/";
@@ -76,5 +97,7 @@ private:
 	map<wstring, int32> _stateAnimations;
 	vector<ModelCollisionBox> _collisionBoxes;
 	vector<ModelCollisionSlope> _collisionSlopes;
+	vector<ModelSpawnPoint> _spawnPoints;
+	vector<ModelSpawnPoint> _doorPoints;
 };
 

@@ -4,6 +4,8 @@
 #include "ModelAnimation.h"
 #include "Weapon.h"
 
+class CameraScript;
+
 enum class PlayerState : uint8
 {
     Idle,
@@ -46,11 +48,14 @@ public:
         return _weapon;
     }
 
+    void ResetCameraAfterTeleport();
+
 private:
     shared_ptr<GameObject> _modelObject;
     shared_ptr<GameObject> _camera;
     unordered_map<PlayerState, string> _animMap;
     PlayerState _state = PlayerState::Idle;
+    weak_ptr<CameraScript> _doorFollowCamera;
 
     shared_ptr<Weapon> _weapon;
     shared_ptr<GameObject> _weaponSocket;

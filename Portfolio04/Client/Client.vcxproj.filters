@@ -105,6 +105,9 @@
     <ClCompile Include="CLD3.cpp">
       <Filter>Game\Character\Enemy</Filter>
     </ClCompile>
+    <ClCompile Include="DoorTransition.cpp">
+      <Filter>Game\Map</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -172,6 +175,9 @@
     </ClInclude>
     <ClInclude Include="CLD3.h">
       <Filter>Game\Character\Enemy</Filter>
+    </ClInclude>
+    <ClInclude Include="DoorTransition.h">
+      <Filter>Game\Map</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -278,6 +284,9 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\Shaders\Map.fx">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="..\Shaders\ScreenFade.fx">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

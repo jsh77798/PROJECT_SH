@@ -28,6 +28,7 @@
     <ClInclude Include="CLD2.h" />
     <ClInclude Include="CLD3.h" />
     <ClInclude Include="Dog.h" />
+    <ClInclude Include="DoorTransition.h" />
     <ClInclude Include="Enemy.h" />
     <ClInclude Include="EnemyController.h" />
     <ClInclude Include="GameManager.h" />
@@ -52,6 +53,7 @@
     <ClCompile Include="CLD2.cpp" />
     <ClCompile Include="CLD3.cpp" />
     <ClCompile Include="Dog.cpp" />
+    <ClCompile Include="DoorTransition.cpp" />
     <ClCompile Include="Enemy.cpp" />
     <ClCompile Include="EnemyController.cpp" />
     <ClCompile Include="GameManager.cpp" />
@@ -263,6 +265,7 @@
     </FxCompile>
     <FxCompile Include="..\Shaders\Debug.fx" />
     <FxCompile Include="..\Shaders\Map.fx" />
+    <FxCompile Include="..\Shaders\ScreenFade.fx" />
     <FxCompile Include="..\Shaders\SkinnedLit.fx" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

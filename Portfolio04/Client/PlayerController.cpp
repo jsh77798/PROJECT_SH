@@ -9,10 +9,30 @@ void PlayerController::Awake()
 
 void PlayerController::Update()
 {
-    printf("PlayerController Update\n");
+    //printf("PlayerController Update\n");
 
-    Vec3 pos = _player->GetTransform()->GetPosition();
+    if (!_player)
+        return;
+
     auto movement = _player->GetCharacterMovement();
+
+    if (!movement)
+        return;
+
+    // 문 전환 중 이동·회전·공격 입력 차단
+    if (movement->IsMovementPaused())
+    {
+        movement->ClearMovementInput();
+        return;
+    }
+
+    if (INPUT->GetButtonDown(KEY_TYPE::LBUTTON))
+    {
+        _player->Attack();
+    }
+
+    //Vec3 pos = _player->GetTransform()->GetPosition();
+    //auto movement = _player->GetCharacterMovement();
 
     if (INPUT->GetButtonDown(KEY_TYPE::LBUTTON))
     {

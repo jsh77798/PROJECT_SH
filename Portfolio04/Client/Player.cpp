@@ -88,6 +88,7 @@ void Player::Init()
 	_camera->GetOrAddTransform()->SetPosition(Vec3{ 0.f, 0.f, -5.f });
 	_camera->AddComponent(make_shared<Camera>());
 	_camera->AddComponent(camScript);
+	_doorFollowCamera = camScript;
 	_camera->GetCamera()->SetCullingMaskLayerOnOff(Layer_UI, true);
 
 	// Weapon
@@ -246,5 +247,13 @@ void Player::EquipWeapon(shared_ptr<Weapon> weapon)
 	_weapon->SetOwner(shared_from_this());
 
 	_weaponSocket->AddChild(_weapon);
+}
+
+void Player::ResetCameraAfterTeleport()
+{
+	if (auto cameraScript = _doorFollowCamera.lock())
+	{
+		cameraScript->ResetFollow();
+	}
 }
 

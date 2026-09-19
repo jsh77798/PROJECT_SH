@@ -23,6 +23,11 @@ public:
         _groundSnapDistance = distance;
     }
 
+    float GetGroundPlacementOffset() const
+    {
+        return _footOffset + _groundOffset;
+    }
+
     void SetFootOffset(float offset)
     {
         _footOffset = offset;
@@ -41,6 +46,23 @@ public:
 
     void Move(const Vec3& delta);
     void RotateTo(const Vec3& direction);
+
+    void SetMovementPaused(bool paused)
+    {
+        _movementPaused = paused;
+        _inputVector = Vec3::Zero;
+    }
+
+    bool IsMovementPaused() const
+    {
+        return _movementPaused;
+    }
+
+    Vec3 GetFootPosition();
+
+    bool TeleportToGroundPoint(
+        const Vec3& groundPosition,
+        float yaw);
 
 private:
     void TickMovement();
@@ -61,6 +83,7 @@ private:
     );
     bool HasBlockingCollision();
     bool TryGroundMove(const Vec3& movement);
+    bool _movementPaused = false;
 
 private:
     Vec3 _inputVector = Vec3::Zero;

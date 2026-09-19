@@ -64,7 +64,8 @@ public:
             _state == EnemyState::Hit ||
             _state == EnemyState::Dead ||
             _state == EnemyState::WakeUp ||
-            _state == EnemyState::LieDown;
+            _state == EnemyState::LieDown ||
+            _state == EnemyState::Thanatosis;
     }
 
     bool CanAttack() const;
@@ -77,6 +78,8 @@ protected:
     void CancelAttack();
 
     virtual void CheckAttackHit();
+
+    bool TryEnterThanatosis();
 
 protected:
     // Dog에서 중복 선언하지 마세요.
@@ -99,7 +102,7 @@ protected:
     bool _attackHitApplied = false;
 
     // 공격 종료 또는 취소 후 대기 시간
-    float _attackCooldown = 0.25f;
+    float _attackCooldown = 0.45f;
     float _attackCooldownRemaining = 0.f;
 
     // 공격 판정 구: 캐릭터 원점을 기준으로 월드 단위
@@ -110,14 +113,21 @@ protected:
     bool _hasAwakened = false;
     string _awakeIdleAnimation;
     bool _hasDeathAnimation = false;
-    bool _isThanatosis = false;
+    bool _isLying = false;
+    EnemyState _stateAfterLieDown = EnemyState::Idle;
+
+    float _thanatosisHealthRatio = 0.2f;
+    float _thanatosisDuration = 5.f;
+    float _thanatosisTimer = 0.f;
+    bool _hasUsedThanatosis = false;
+    float _thanatosisWakeRange = 5.f;
 
     // Hit 애니메이션
     string _frontHitAnimation;
     string _backHitAnimation;
     string _ThanatosisHitAnimation;
     string _currentHitAnimation;
-
+    string _thanatosisIdleAnimation;
 
     // 피격 전에 일어나거나 눕는 중이었는지 기억
     EnemyState _stateBeforeHit = EnemyState::Idle;

@@ -12,6 +12,12 @@ public:
 
 	float _speed = 10.f;
 
+	void ResetFollow()
+	{
+		_followInitialized = false;
+		_armInitialized = false;
+	}
+
 private:
 	shared_ptr<GameObject> _target;
 	float _offset = 6.f;

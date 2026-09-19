@@ -47,7 +47,7 @@ void CLD1::Init()
 	//////////////////////////////////////////////////////////////////////
 
 
-	_isThanatosis = true;
+	_isLying = true;
 	_hasAwakened = false;
 
 	// Movement
@@ -83,6 +83,7 @@ void CLD1::Init()
 	_animMap[EnemyState::Attack] = animator->MakeAnimData("Attack", model->FindAnimation(L"CLD1/CLD1_Attack1"), false);
 	_animMap[EnemyState::Dead] = animator->MakeAnimData("Dead", model->FindAnimation(L"CLD1/CLD1_Death1"), false);
 	_animMap[EnemyState::Hit] = animator->MakeAnimData("Hit", model->FindAnimation(L"CLD1/CLD1_Hit3"), false);
+	_animMap[EnemyState::Thanatosis] = animator->MakeAnimData("Thanatosis", model->FindAnimation(L"CLD1/CLD1_Idle1"), false);
 	_ThanatosisHitAnimation = animator->MakeAnimData("ThanaHit", model->FindAnimation(L"CLD1/CLD1_Hit1"), false);
 
 	// * CLD1 *

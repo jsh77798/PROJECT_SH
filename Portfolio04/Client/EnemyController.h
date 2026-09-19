@@ -36,8 +36,8 @@ private:
     shared_ptr<Character> _player;
 
 private:
-    float _detectRange = 10.0f;
-    float _viewHalfAngle = 70.f;
+    float _detectRange = 14.0f;
+    float _viewHalfAngle = 100.f;
     float _attackRange = 2.0f;
     float _attackFacingAngle = 20.f;
 };

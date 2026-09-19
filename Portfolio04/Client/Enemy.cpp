@@ -196,6 +196,8 @@ void Enemy::LieDown()
 
     if (PlayState(EnemyState::LieDown))
     {
+        _stateAfterLieDown = EnemyState::Idle;
+
         GetCharacterMovement()->ClearMovementInput();
     }
 }
@@ -280,6 +282,25 @@ void Enemy::Hit(const Vec3& attackerPosition)
     if (IsDead())
         return;
 
+    if (_state == EnemyState::Thanatosis)
+    {
+        if (_ThanatosisHitAnimation.empty())
+            return;
+
+        _currentHitAnimation = _ThanatosisHitAnimation;
+
+        if (!PlayState(EnemyState::Hit))
+            return;
+
+        _stateBeforeHit = EnemyState::Thanatosis;
+
+        GetCharacterMovement()->ClearMovementInput();
+        return;
+    }
+
+    if (TryEnterThanatosis())
+        return;
+
     // 현재 Hit 도중 다시 맞아도 이번에는 모션을 재시작하지 않음
     // 체력 감소는 공격 측에서 별도로 적용됩니다.
     if (_state == EnemyState::Hit)
@@ -304,25 +325,13 @@ void Enemy::Hit(const Vec3& attackerPosition)
         hitFromFront = forward.Dot(toAttacker) >= 0.f;
     }
 
-    //_currentHitAnimation = hitFromFront
-    //    ? _frontHitAnimation
-    //    : _backHitAnimation;
-    //
-    //// 해당 방향의 모션이 없으면 반대쪽으로 대체
-    //if (_currentHitAnimation.empty())
-    //{
-    //    _currentHitAnimation = hitFromFront
-    //        ? _backHitAnimation
-    //        : _frontHitAnimation;
-    //}
-
     // 누운 Idle인지 확인
 // WakeUp이 없는 일반 적은 제외
     bool isLyingIdle =
         _state == EnemyState::Idle &&
         NeedsWakeUp();
     
-    if (_isThanatosis)
+    if (_isLying)
     {
         // 누운 피격 등록 누락을 바로 확인
         if (_ThanatosisHitAnimation.empty())
@@ -412,13 +421,56 @@ void Enemy::Update()
     if (!animator)
         return;
 
+    if (_state == EnemyState::Thanatosis)
+    {
+        // 쓰러지는 애니메이션이 끝나야 대기 시작
+        if (!animator->IsAnimationFinished())
+            return;
+
+        _isLying = true;
+        _hasAwakened = false;
+
+        _thanatosisTimer += dt;
+
+        if (_thanatosisTimer >= _thanatosisDuration)
+        {
+            if (!_target)
+                return;
+
+            auto targetHealth = _target->GetHealthComponent();
+
+            if (!targetHealth || targetHealth->IsDead())
+                return;
+
+            Vec3 direction =
+                _target->GetTransform()->GetPosition() -
+                GetTransform()->GetPosition();
+
+            // 높이를 제외한 수평 거리 검사
+            direction.y = 0.f;
+
+            float rangeSquared =
+                _thanatosisWakeRange * _thanatosisWakeRange;
+
+            if (direction.LengthSquared() <= rangeSquared)
+            {
+                if (PlayState(EnemyState::WakeUp))
+                {
+                    _thanatosisTimer = 0.f;
+                }
+            }
+        }
+
+        return;
+    }
+
     // WakeUp 종료
     if (_state == EnemyState::WakeUp)
     {
         if (animator->IsAnimationFinished())
         {
             _hasAwakened = true;
-            _isThanatosis = false;
+            _isLying = false;
 
             PlayState(EnemyState::Move);
         }
@@ -430,42 +482,46 @@ void Enemy::Update()
     {
         if (animator->IsAnimationFinished())
         {
-            // 반드시 Idle을 재생하기 전에 변경
             _hasAwakened = false;
-            _isThanatosis = true;
+            _isLying = true;
 
-            PlayState(EnemyState::Idle);
+            EnemyState nextState = _stateAfterLieDown;
+
+            if (PlayState(nextState))
+            {
+                _stateAfterLieDown = EnemyState::Idle;
+            }
         }
 
         return;
     }
 
-    // 피격 종료
+    // 피격 
     if (_state == EnemyState::Hit)
     {
-        if (animator->IsAnimationFinished())
+        if (!animator->IsAnimationFinished())
+            return;
+
+        _currentHitAnimation.clear();
+
+        // 죽은 척하다 맞았으면 그 상태로 복귀
+        if (_stateBeforeHit == EnemyState::Thanatosis)
         {
-            EnemyState nextState = EnemyState::Idle;
+            PlayState(EnemyState::Thanatosis);
 
-            // 피격으로 중단됐던 자세 전환은 처음부터 다시 재생
-            if (_stateBeforeHit == EnemyState::WakeUp ||
-                _stateBeforeHit == EnemyState::LieDown)
-            {
-                nextState = _stateBeforeHit;
-            }
-
-            _currentHitAnimation.clear();
-
-            if (!PlayState(nextState))
-            {
-                if (!PlayState(EnemyState::Idle))
-                {
-                    _state = EnemyState::Idle;
-                    _stateInitialized = false;
-                }
-            }
+            return;
         }
 
+        // 일어나기·눕기 도중 맞았다면 해당 동작 재시작
+        EnemyState nextState = EnemyState::Idle;
+
+        if (_stateBeforeHit == EnemyState::WakeUp ||
+            _stateBeforeHit == EnemyState::LieDown)
+        {
+            nextState = _stateBeforeHit;
+        }
+
+        PlayState(nextState);
         return;
     }
 
@@ -597,4 +653,74 @@ void Enemy::CheckAttackHit()
         _damage,
         GetTransform()->GetPosition()
     );
+}
+
+bool Enemy::TryEnterThanatosis()
+{
+    if (!_health || _health->IsDead() || IsDead())
+        return false;
+
+    if (_state == EnemyState::LieDown &&
+        _stateAfterLieDown == EnemyState::Thanatosis)
+    {
+        return true;
+    }
+
+    // 이미 죽은 척 중이면 일반 피격으로 전환하지 않음
+    // 대기 타이머도 초기화하지 않음
+    if (_state == EnemyState::Thanatosis)
+        return true;
+
+    // 한 번 사용했다면 다시 진입하지 않음
+    if (_hasUsedThanatosis)
+        return false;
+
+    // 필요한 모션이 모두 등록돼 있어야 함
+    if (_animMap.find(EnemyState::LieDown) == _animMap.end() ||
+        _animMap.find(EnemyState::Thanatosis) == _animMap.end() ||
+        _animMap.find(EnemyState::WakeUp) == _animMap.end())
+    {
+        return false;
+    }
+
+    float maxHealth = _health->GetMaxHealth();
+
+    if (maxHealth <= 0.f)
+        return false;
+
+    // 체력이 정확히 20%라면 진입하지 않음
+    if (_health->GetHealth() >=
+        maxHealth * _thanatosisHealthRatio)
+    {
+        return false;
+    }
+
+    if (_state == EnemyState::LieDown)
+    {
+        // 이미 눕는 중이면 현재 모션을 유지
+    }
+    else if (_state == EnemyState::Idle && _isLying)
+    {
+        // 이미 누워 있다면 바로 죽은 척 대기로
+        if (!PlayState(EnemyState::Thanatosis))
+            return false;
+    }
+    else
+    {
+        // 서 있다면 먼저 눕기
+        if (!PlayState(EnemyState::LieDown))
+            return false;
+    }
+
+    _stateAfterLieDown = EnemyState::Thanatosis;
+
+    _hasUsedThanatosis = true;
+    _thanatosisTimer = 0.f;
+
+    CancelAttack();
+    _currentHitAnimation.clear();
+
+    GetCharacterMovement()->ClearMovementInput();
+
+    return true;
 }

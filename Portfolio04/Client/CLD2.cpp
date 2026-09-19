@@ -32,12 +32,23 @@ void CLD2::Init()
 	model->ReadMaterial(ASSIMP->MeshImporter(L"CLD2/CLD2.fbx"));
 
 	// Animation
-	model->ReadAnimation(ASSIMP->AnimImporter(L"CLD2/CLD2_Idle.fbx"));
-	model->ReadAnimation(ASSIMP->AnimImporter(L"CLD2/CLD2_Move.fbx"));
+	model->ReadAnimation(ASSIMP->AnimImporter(L"CLD2/CLD2_Idle1.fbx"));
+	model->ReadAnimation(ASSIMP->AnimImporter(L"CLD2/CLD2_Idle2.fbx"));
+	model->ReadAnimation(ASSIMP->AnimImporter(L"CLD2/CLD2_Idle3.fbx"));
+	model->ReadAnimation(ASSIMP->AnimImporter(L"CLD2/CLD2_Stand1.fbx"));
+	model->ReadAnimation(ASSIMP->AnimImporter(L"CLD2/CLD2_Stand2.fbx"));
+	model->ReadAnimation(ASSIMP->AnimImporter(L"CLD2/CLD2_Move1.fbx"));
 	model->ReadAnimation(ASSIMP->AnimImporter(L"CLD2/CLD2_Attack1.fbx"));
-	model->ReadAnimation(ASSIMP->AnimImporter(L"CLD2/CLD2_Death.fbx"));
+	model->ReadAnimation(ASSIMP->AnimImporter(L"CLD2/CLD2_Hit1.fbx"));
+	model->ReadAnimation(ASSIMP->AnimImporter(L"CLD2/CLD2_Hit2.fbx"));
+	model->ReadAnimation(ASSIMP->AnimImporter(L"CLD2/CLD2_Hit3.fbx"));
+	model->ReadAnimation(ASSIMP->AnimImporter(L"CLD2/CLD2_Death1.fbx"));
+	model->ReadAnimation(ASSIMP->AnimImporter(L"CLD2/CLD2_Death2.fbx"));
 	//////////////////////////////////////////////////////////////////////
 
+
+	_isLying = true;
+	_hasAwakened = false;
 
 	// Movement
 	_movement->SetFootOffset(0.f);
@@ -57,20 +68,26 @@ void CLD2::Init()
 
 	// ModelObject
 	_modelObject = make_shared<GameObject>();
-	_modelObject->GetOrAddTransform()->SetScale(Vec3(0.00005f));
+	_modelObject->GetOrAddTransform()->SetScale(Vec3(0.00006f));
 	_modelObject->GetOrAddTransform()->SetRotation(Vec3{ 0.0f, XM_PI, XM_PI });
 	_modelObject->AddComponent(make_shared<ModelAnimator>(_shader));
 	_modelObject->GetModelAnimator()->SetModel(model);
 
 	// Animation Data
 	auto animator = _modelObject->GetModelAnimator();
-	_animMap[EnemyState::Idle] = animator->MakeAnimData("Idle", model->FindAnimation(L"CLD2/CLD2_Idle"));
-	_animMap[EnemyState::Move] = animator->MakeAnimData("Move", model->FindAnimation(L"CLD2/CLD2_Move"));
+	_animMap[EnemyState::Idle] = animator->MakeAnimData("Idle", model->FindAnimation(L"CLD2/CLD2_Idle1"));
+	_awakeIdleAnimation = animator->MakeAnimData("AwakeIdle", model->FindAnimation(L"CLD2/CLD2_Idle3"));
+	_animMap[EnemyState::WakeUp] = animator->MakeAnimData("WakeUp", model->FindAnimation(L"CLD2/CLD2_Stand1"), false);
+	_animMap[EnemyState::LieDown] = animator->MakeAnimData("LieDown", model->FindAnimation(L"CLD2/CLD2_Death1"), false);
+	_animMap[EnemyState::Move] = animator->MakeAnimData("Move", model->FindAnimation(L"CLD2/CLD2_Move1"));
 	_animMap[EnemyState::Attack] = animator->MakeAnimData("Attack", model->FindAnimation(L"CLD2/CLD2_Attack1"), false);
-	_animMap[EnemyState::Dead] = animator->MakeAnimData("Dead", model->FindAnimation(L"CLD2/CLD2_Death"), false);
+	_animMap[EnemyState::Dead] = animator->MakeAnimData("Dead", model->FindAnimation(L"CLD2/CLD2_Death1"), false);
+	_animMap[EnemyState::Hit] = animator->MakeAnimData("Hit", model->FindAnimation(L"CLD2/CLD2_Hit3"), false);
+	_animMap[EnemyState::Thanatosis] = animator->MakeAnimData("Thanatosis", model->FindAnimation(L"CLD2/CLD2_Idle1"), false);
+	_ThanatosisHitAnimation = animator->MakeAnimData("ThanaHit", model->FindAnimation(L"CLD2/CLD2_Hit1"), false);
 
 	// * CLD2 *
-	GetOrAddTransform()->SetPosition(Vec3{ -5.0f, 5.0f, 5.0f });
+	GetOrAddTransform()->SetPosition(Vec3{ 0.0f, 5.0f, 2.0f });
 	GetCharacterMovement()->SetMoveSpeed(2.0f);
 	AddComponent(_enemyController);
 	AddComponent(collider);

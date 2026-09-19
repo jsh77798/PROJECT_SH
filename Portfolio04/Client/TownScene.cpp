@@ -1,10 +1,13 @@
 #include "pch.h"
 #include "TownScene.h"
 #include "Map.h"
+#include "DoorTransition.h"
 #include "Player.h"
 #include "Enemy.h"
 #include "Dog.h"
 #include "CLD1.h"
+#include "CLD2.h"
+#include "CLD3.h"
 #include "GameObject.h"
 #include "MeshRenderer.h"
 #include "Transform.h"
@@ -13,7 +16,9 @@
 #include "EnemyController.h"
 #include "SnowBillboard.h"
 #include "Skybox.h"
-
+#include "Model.h"
+#include "CharacterMovement.h"
+#include "BaseCollider.h"
 #include "ModelAnimator.h"
 #include "SphereCollider.h"
 #include "AABBBoxCollider.h"
@@ -90,27 +95,209 @@ void TownScene::Start()
         CUR_SCENE->SetSkybox(skybox);
     }
 
-    // ==========================
-    // Player 생성
-    // ==========================
-    mPlayer = make_shared<Player>();
-    mPlayer->Init();
-    CUR_SCENE->Add(mPlayer);
+    //// ==========================
+    //// Player 생성
+    //// ==========================
+    //mPlayer = make_shared<Player>();
+    //mPlayer->Init();
+    //CUR_SCENE->Add(mPlayer);
+    //
+    //
+    //// ==========================
+    //// Enemy 생성
+    //// ==========================
+    //// Dog
+    //auto mDog = make_shared<Dog>();
+    //mDog->SetTarget(mPlayer);
+    //mDog->Init();
+    //CUR_SCENE->Add(mDog);
+    //// CLD1
+    //auto mCLD1 = make_shared<CLD1>();
+    //mCLD1->SetTarget(mPlayer);
+    //mCLD1->Init();
+    //CUR_SCENE->Add(mCLD1);
+    //// CLD2
+    //auto mCLD2 = make_shared<CLD2>();
+    //mCLD2->SetTarget(mPlayer);
+    //mCLD2->Init();
+    //CUR_SCENE->Add(mCLD2);
+    //// CLD3
+    //auto mCLD3 = make_shared<CLD3>();
+    //mCLD3->SetTarget(mPlayer);
+    //mCLD3->Init();
+    //CUR_SCENE->Add(mCLD3);
 
 
     // ==========================
-    // Enemy 생성
+    // Blender 배치 지점으로 캐릭터 생성
     // ==========================
-    // Dog
-    auto mDog = make_shared<Dog>();
-    mDog->SetTarget(mPlayer);
-    mDog->Init();
-    CUR_SCENE->Add(mDog);
-    // CLD1
-    auto mCLD1 = make_shared<CLD1>();
-    mCLD1->SetTarget(mPlayer);
-    mCLD1->Init();
-    CUR_SCENE->Add(mCLD1);
+    const auto& spawnPoints =
+        map->GetModel()->GetSpawnPoints();
+
+    const Matrix mapWorld =
+        map->GetTransform()->GetWorldMatrix();
+
+    // 캐릭터의 위치와 방향 설정
+    auto applySpawnPoint =
+        [&](const shared_ptr<Character>& character,
+            const ModelSpawnPoint& point)
+        {
+            // Empty의 모델 공간 행렬에 맵 월드 변환 적용
+            const Matrix spawnWorld =
+                point.transform * mapWorld;
+
+            // Empty 원점 = 발이 닿는 위치
+            Vec3 position = XMVector3TransformCoord(
+                Vec3::Zero,
+                spawnWorld
+            );
+
+            // 바닥 위치를 캐릭터 원점 위치로 보정
+            auto movement = character->GetCharacterMovement();
+
+            if (movement)
+            {
+                position.y +=
+                    movement->GetGroundPlacementOffset();
+            }
+
+            auto transform =
+                character->GetOrAddTransform();
+
+            transform->SetPosition(position);
+
+            // 배치 지점의 로컬 +Z를 엔진에서의 전방으로 사용
+            Vec3 forward = XMVector3TransformNormal(
+                Vec3(0.f, 1.f, 0.f),
+                spawnWorld
+            );
+
+            forward.y = 0.f;
+
+            if (forward.LengthSquared() > 0.000001f)
+            {
+                forward.Normalize();
+
+                const float yaw =
+                    std::atan2(forward.x, forward.z);
+
+                // 캐릭터는 바닥에 똑바로 서 있도록 Y축 회전만 적용
+                transform->SetLocalRotation(
+                    Vec3(0.f, yaw, 0.f)
+                );
+            }
+
+            // 맵의 스케일을 캐릭터 스케일에 복사하지 않음.
+            // 캐릭터 모델 크기는 각 Init()의 설정을 사용.
+
+            if (auto collider = character->GetCollider())
+            {
+                collider->Update();
+            }
+        };
+
+    // ==========================
+    // 1. Player 생성
+    // ==========================
+    const ModelSpawnPoint* playerSpawn = nullptr;
+
+    for (const auto& point : spawnPoints)
+    {
+        if (point.name == L"SPAWN_Player")
+        {
+            playerSpawn = &point;
+            break;
+        }
+    }
+
+    if (playerSpawn)
+    {
+        mPlayer = make_shared<Player>();
+        mPlayer->Init();
+
+        // Init 내부의 기본 위치보다 나중에 적용
+        applySpawnPoint(mPlayer, *playerSpawn);
+
+        CUR_SCENE->Add(mPlayer);
+    }
+    else
+    {
+        OutputDebugStringA(
+            "TownScene: SPAWN_Player was not found. "
+            "Character spawning skipped.\n"
+        );
+    }
+
+    // ==========================
+    // 2. Enemy 생성
+    // ==========================
+    if (mPlayer)
+    {
+        for (const auto& point : spawnPoints)
+        {
+            shared_ptr<Enemy> enemy;
+
+            if (point.name.rfind(L"SPAWN_Dog_", 0) == 0)
+            {
+                enemy = make_shared<Dog>();
+            }
+            else if (point.name.rfind(L"SPAWN_CLD1_", 0) == 0)
+            {
+                enemy = make_shared<CLD1>();
+            }
+            else if (point.name.rfind(L"SPAWN_CLD2_", 0) == 0)
+            {
+                enemy = make_shared<CLD2>();
+            }
+            else if (point.name.rfind(L"SPAWN_CLD3_", 0) == 0)
+            {
+                enemy = make_shared<CLD3>();
+            }
+            else
+            {
+                // Player 지점 및 지원하지 않는 이름
+                continue;
+            }
+
+            // Init에서 컨트롤러에 전달할 타깃
+            enemy->SetTarget(mPlayer);
+
+            // virtual Init이므로 Dog/CLD별 Init 실행
+            enemy->Init();
+
+            applySpawnPoint(enemy, point);
+
+            CUR_SCENE->Add(enemy);
+        }
+    }
+
+
+    if (mPlayer)
+    {
+        auto doorObject = make_shared<GameObject>();
+        doorObject->GetOrAddTransform();
+
+        auto doorTransition =
+            make_shared<DoorTransition>();
+
+        weak_ptr<Player> weakPlayer = mPlayer;
+
+        doorTransition->Init(
+            mPlayer,
+            map->GetModel(),
+            map->GetTransform()->GetWorldMatrix(),
+            [weakPlayer]()
+            {
+                if (auto player = weakPlayer.lock())
+                {
+                    player->ResetCameraAfterTeleport();
+                }
+            }
+        );
+
+        doorObject->AddComponent(doorTransition);
+        CUR_SCENE->Add(doorObject);
+    }
 
 
     // ==========================

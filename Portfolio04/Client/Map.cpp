@@ -16,6 +16,7 @@ void Map::Init(shared_ptr<Shader> shader, shared_ptr<Shader> debugShader)
     auto modelPath = ASSIMP->MeshImporter(L"Map/Map.fbx");
     model->ReadModel(modelPath);
     model->ReadMaterial(modelPath);
+    _model = model;
     //////////////////////////////////////////////////////////////////////
 
 
@@ -35,9 +36,10 @@ void Map::Init(shared_ptr<Shader> shader, shared_ptr<Shader> debugShader)
     AddComponent(renderer);
 
     // 위 Transform 설정과 같은 행렬
-    Matrix mapWorld =
-        Matrix::CreateScale(mapScale) *
-        Matrix::CreateTranslation(mapPosition);
+    //Matrix mapWorld =
+    //    Matrix::CreateScale(mapScale) *
+    //    Matrix::CreateTranslation(mapPosition);
+    Matrix mapWorld = transform->GetWorldMatrix();
 
     CreateWallColliders(model, debugShader, mapWorld);
     CreateSlopeColliders(model, debugShader, mapWorld);

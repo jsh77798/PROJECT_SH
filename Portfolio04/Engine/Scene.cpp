@@ -8,6 +8,7 @@
 #include "Terrain.h"
 #include "Button.h"
 #include "SnowBillboard.h"
+#include "Shader.h"
 #include "Skybox.h"
 
 void Scene::Start()
@@ -174,6 +175,7 @@ void Scene::Render()
 		camera->SortGameObject();
 		camera->Render_Forward();
 	}
+	RenderFade();
 }
 
 void Scene::Add(shared_ptr<GameObject> object)
@@ -260,6 +262,49 @@ bool Scene::RayCast(Ray& ray, shared_ptr<BaseCollider>& ignoreCollider, OUT shar
 			hitCollider = collider;
 		}
 	}
+
+	return hitCollider != nullptr;
+}
+
+bool Scene::RayCastFiltered(Ray& ray, float maxDistance, const std::function<bool(const shared_ptr<GameObject>&)>& shouldIgnore, OUT shared_ptr<BaseCollider>& hitCollider, OUT float& distance)
+{
+	hitCollider = nullptr;
+	distance = maxDistance;
+
+	// 자식에 붙은 콜라이더도 검사
+	auto visit = [&](auto&& self,
+		const shared_ptr<GameObject>& object) -> void
+		{
+			if (!object)
+				return;
+
+			// 제외한 오브젝트의 자식도 함께 제외
+			if (shouldIgnore && shouldIgnore(object))
+				return;
+
+			auto collider = object->GetCollider();
+
+			if (collider)
+			{
+				collider->Update();
+
+				float hitDistance = 0.f;
+
+				if (collider->Intersects(ray, hitDistance) &&
+					hitDistance >= 0.f &&
+					hitDistance <= distance)
+				{
+					distance = hitDistance;
+					hitCollider = collider;
+				}
+			}
+
+			for (const auto& child : object->GetChildren())
+				self(self, child);
+		};
+
+	for (const auto& object : _objects)
+		visit(visit, object);
 
 	return hitCollider != nullptr;
 }
@@ -433,4 +478,80 @@ bool Scene::CheckCollision(shared_ptr<BaseCollider>& collider, OUT Vec3& normal)
 	}
 
 	return false;
+}
+
+void Scene::RenderFade()
+{
+	if (_fadeAlpha <= 0.f)
+		return;
+
+	if (!_fadeShader)
+	{
+		_fadeShader =
+			make_shared<Shader>(L"ScreenFade.fx");
+	}
+
+	// 다음 프레임에 페이드 렌더 상태가 남지 않도록 보관
+	ComPtr<ID3D11BlendState> oldBlend;
+	FLOAT oldBlendFactor[4] = {};
+	UINT oldSampleMask = 0;
+
+	DC->OMGetBlendState(
+		oldBlend.GetAddressOf(),
+		oldBlendFactor,
+		&oldSampleMask
+	);
+
+	ComPtr<ID3D11DepthStencilState> oldDepth;
+	UINT oldStencilRef = 0;
+
+	DC->OMGetDepthStencilState(
+		oldDepth.GetAddressOf(),
+		&oldStencilRef
+	);
+
+	ComPtr<ID3D11RasterizerState> oldRasterizer;
+	DC->RSGetState(oldRasterizer.GetAddressOf());
+
+	ComPtr<ID3D11GeometryShader> oldGeometryShader;
+	DC->GSGetShader(
+		oldGeometryShader.GetAddressOf(),
+		nullptr,
+		nullptr
+	);
+
+	D3D11_PRIMITIVE_TOPOLOGY oldTopology;
+	DC->IAGetPrimitiveTopology(&oldTopology);
+
+	_fadeShader->GetScalar("FadeAlpha")
+		->SetFloat(_fadeAlpha);
+
+	DC->IASetPrimitiveTopology(
+		D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST
+	);
+
+	// SV_VertexID 사용: 정점 버퍼가 필요 없음
+	DC->IASetInputLayout(nullptr);
+	_fadeShader->Draw(0, 0, 3);
+
+	DC->OMSetBlendState(
+		oldBlend.Get(),
+		oldBlendFactor,
+		oldSampleMask
+	);
+
+	DC->OMSetDepthStencilState(
+		oldDepth.Get(),
+		oldStencilRef
+	);
+
+	DC->RSSetState(oldRasterizer.Get());
+
+	DC->GSSetShader(
+		oldGeometryShader.Get(),
+		nullptr,
+		0
+	);
+
+	DC->IASetPrimitiveTopology(oldTopology);
 }

@@ -31,6 +31,9 @@ private:
         Vec3 triggerPosition = Vec3::Zero;
         Vec3 exitPosition = Vec3::Zero;
         float exitYaw = 0.f;
+
+        std::string bgmPath;
+        bool destinationIndoor = false;
     };
 
     bool IsInside(
@@ -40,7 +43,9 @@ private:
 
     void AddLink(
         const Matrix& triggerWorld,
-        const Matrix& exitWorld);
+        const Matrix& exitWorld,
+        const std::string& bgmPath,
+        bool destinationIndoor);
 
 private:
     weak_ptr<Player> _player;

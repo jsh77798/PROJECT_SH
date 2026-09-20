@@ -10,6 +10,7 @@
 #include "SnowBillboard.h"
 #include "Shader.h"
 #include "Skybox.h"
+#include "BloodEffect.h"
 
 void Scene::Start()
 {
@@ -85,23 +86,7 @@ void Scene::LateUpdate()
 
 void Scene::Render()
 {
-	//for (auto& camera : _cameras)
-	//{
-	//	camera->GetCamera()->SortGameObject();
-	//	camera->GetCamera()->Render_Forward();
-	//}
-	//
-	//// Collider Debug Render
-	//for (auto& object : _objects)
-	//{
-	//	auto collider = object->GetCollider();
-	//
-	//	if (collider == nullptr)
-	//		continue;
-	//
-	//	collider->DebugRender();
-	//}
-
+	
 	// 자식 오브젝트의 눈 컴포넌트까지 렌더링
 	auto renderSnow =
 		[](auto&& self,
@@ -141,12 +126,25 @@ void Scene::Render()
 		}
 
 		// 눈 렌더링
-		Vec3 cameraPosition =
-			cameraObject->GetTransform()->GetPosition();
-
-		for (auto& object : _objects)
+		if (_snowEnabled)
 		{
-			renderSnow(renderSnow, object, cameraPosition);
+			Vec3 cameraPosition =
+				cameraObject->GetTransform()->GetPosition();
+
+			for (auto& object : _objects)
+			{
+				renderSnow(renderSnow, object, cameraPosition);
+			}
+		}
+
+		// 피 효과 렌더링
+		for (const auto& object : _objects)
+		{
+			auto blood =
+				dynamic_pointer_cast<BloodEffect>(object);
+
+			if (blood)
+				blood->Render();
 		}
 
 		// 콜리전도 월드 카메라 행렬로 렌더링
@@ -226,6 +224,25 @@ std::shared_ptr<GameObject> Scene::GetUICamera()
 	}
 
 	return nullptr;
+}
+
+void Scene::SpawnBlood(const Vec3& position, const Vec3& direction)
+{
+	if (!_bloodShader)
+	{
+		_bloodShader =
+			make_shared<Shader>(L"Blood.fx");
+	}
+
+	auto effect = make_shared<BloodEffect>();
+
+	effect->Init(
+		_bloodShader,
+		position,
+		direction
+	);
+
+	Add(effect);
 }
 
 bool Scene::RayCast(Ray& ray, shared_ptr<BaseCollider>& ignoreCollider, OUT shared_ptr<BaseCollider>& hitCollider, OUT float& distance, bool cameraOnly)

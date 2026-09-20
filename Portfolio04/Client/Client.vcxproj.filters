@@ -289,5 +289,8 @@
     <FxCompile Include="..\Shaders\ScreenFade.fx">
       <Filter>Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="..\Shaders\Blood.fx">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

@@ -31,14 +31,6 @@ void PlayerController::Update()
         _player->Attack();
     }
 
-    //Vec3 pos = _player->GetTransform()->GetPosition();
-    //auto movement = _player->GetCharacterMovement();
-
-    if (INPUT->GetButtonDown(KEY_TYPE::LBUTTON))
-    {
-		_player->Attack();
-    }
-
     if (_player->IsAttacking())
     {
         movement->ClearMovementInput();
@@ -62,6 +54,17 @@ void PlayerController::Update()
     if (INPUT->GetButton(KEY_TYPE::D))
         turnInput += 1.f;
 
+    // 앞으로 이동하면서 Shift를 누를 때만 달리기
+    const bool isRunning =
+        moveInput > 0.f &&
+        INPUT->GetButton(KEY_TYPE::SHIFT);
+
+    movement->SetMoveSpeed(
+        isRunning ? _runSpeed : _walkSpeed
+    );
+
+    //auto transform = _player->GetTransform();
+
     if (turnInput != 0.f)
     {
         Vec3 rot = GetTransform()->GetLocalRotation();
@@ -77,18 +80,17 @@ void PlayerController::Update()
         movement->AddMovementInput(
             forward * moveInput
         );
-        //movement->AddMovementInput(
-        //    GetTransform()->GetForward() * moveInput
-        //);
     }
-
 
     // =========================
     //  애니메이션 처리
     // =========================
     if (moveInput > 0.f)
     {
-        _player->Move();
+        if (isRunning)
+            _player->Run();
+        else
+            _player->Move();
     }
     else if (moveInput < 0.f)
     {

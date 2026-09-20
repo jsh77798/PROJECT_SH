@@ -12,6 +12,7 @@
 #include "AABBBoxCollider.h"
 #include "OBBBoxCollider.h"
 #include "Enemy.h"
+#include "SoundManager.h"
 
 Pipe::Pipe()
 {
@@ -122,28 +123,86 @@ void Pipe::Attack()
         // 데미지 처리 전에 등록
         _hitObjects.insert(object);
 
+
+        // 사운드 Hit
+        SoundManager::Get().PlaySFX("PipeHit");
+
+     
+        // 맞은 대상의 실제 콜라이더 중심
+        Vec3 targetCenter =
+            character->GetTransform()->GetPosition();
+
+        float surfaceOffset = 0.f;
+
+        switch (collider->GetColliderType())
+        {
+        case ColliderType::Sphere:
+        {
+            auto sphere =
+                dynamic_pointer_cast<SphereCollider>(collider);
+
+            const auto& bounds = sphere->GetBoundingSphere();
+
+            targetCenter = bounds.Center;
+            surfaceOffset = bounds.Radius;
+            break;
+        }
+
+        case ColliderType::AABB:
+        {
+            auto box =
+                dynamic_pointer_cast<AABBBoxCollider>(collider);
+
+            targetCenter = box->GetBoundingBox().Center;
+            break;
+        }
+
+        case ColliderType::OBB:
+        {
+            auto box =
+                dynamic_pointer_cast<OBBBoxCollider>(collider);
+
+            targetCenter = box->GetBoundingBox().Center;
+            break;
+        }
+        }
+
+        // 타격받은 몸에서 공격자 쪽으로 피가 튀도록 설정
+        Vec3 sprayDirection =
+            owner->GetTransform()->GetPosition() - targetCenter;
+
+        sprayDirection.y = 0.f;
+
+        if (sprayDirection.LengthSquared() < 0.000001f)
+        {
+            sprayDirection =
+                -owner->GetTransform()->GetForward();
+
+            sprayDirection.y = 0.f;
+        }
+
+        if (sprayDirection.LengthSquared() < 0.000001f)
+            sprayDirection = Vec3(0.f, 0.f, 1.f);
+
+        sprayDirection.Normalize();
+
+        // 구형 콜라이더는 공격자 쪽 표면에서 생성
+        Vec3 hitPosition =
+            targetCenter +
+            sprayDirection * (surfaceOffset + 0.02f);
+
+        // 사망 콜백으로 대상이 제거되기 전에 생성
+        CUR_SCENE->SpawnBlood(
+            hitPosition,
+            sprayDirection
+        );
+
         health->TakeDamage(
             GetDamage(),
             owner->GetTransform()->GetPosition()
         );
 
-        //health->TakeDamage(GetDamage());
-        //
-        //auto enemy = dynamic_pointer_cast<Enemy>(object);
-        //
-        //if (enemy)
-        //{
-        //    // 치명타는 피격 모션 대신 사망 처리
-        //    if (health->IsDead())
-        //    {
-        //        enemy->Death();
-        //    }
-        //    else
-        //    {
-        //        // owner는 기존 _owner.lock()으로 얻은 공격자
-        //        enemy->Hit(owner->GetTransform()->GetPosition());
-        //    }
-        //}
+       
     }
 }
 

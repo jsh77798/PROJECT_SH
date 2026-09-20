@@ -33,6 +33,15 @@ public:
 			alpha > 1.f ? 1.f : alpha;
 	}
 
+	void SetSnowEnabled(bool enabled)
+	{
+		_snowEnabled = enabled;
+	}
+
+	void SpawnBlood(
+		const Vec3& position,
+		const Vec3& direction);
+
 	bool RayCast(
 		Ray& ray,
 		shared_ptr<BaseCollider>& ignoreCollider,
@@ -66,5 +75,7 @@ private:
 	shared_ptr<Skybox> _skybox;
 	float _fadeAlpha = 0.f;
 	shared_ptr<Shader> _fadeShader;
+	shared_ptr<Shader> _bloodShader;
+	bool _snowEnabled = true;
 };
 

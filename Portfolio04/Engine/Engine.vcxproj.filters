@@ -264,6 +264,13 @@
     <ClCompile Include="SkyBox.cpp">
       <Filter>06. UI &amp; Effect</Filter>
     </ClCompile>
+    <ClCompile Include="BloodEffect.cpp">
+      <Filter>06. UI &amp; Effect</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Libraries\Include\miniaudio\miniaudio.c" />
+    <ClCompile Include="SoundManager.cpp">
+      <Filter>02. Managers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -487,6 +494,12 @@
     </ClInclude>
     <ClInclude Include="SkyBox.h">
       <Filter>06. UI &amp; Effect</Filter>
+    </ClInclude>
+    <ClInclude Include="BloodEffect.h">
+      <Filter>06. UI &amp; Effect</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundManager.h">
+      <Filter>02. Managers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

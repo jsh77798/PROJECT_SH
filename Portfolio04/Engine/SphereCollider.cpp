@@ -238,53 +238,20 @@ bool SphereCollider::GetCollisionNormal(shared_ptr<BaseCollider>& other, OUT Vec
 void SphereCollider::DebugRender()
 {
 	// 디버그 렌더링을 위한 로그 출력
-    {
-        OutputDebugStringA("SphereCollider DebugRender\n");
-
-        Vec3 pos = GetTransform()->GetPosition();
-
-        char buffer[256];
-        sprintf_s(
-            buffer,
-            "Collider : %f %f %f\n",
-            pos.x, pos.y, pos.z
-        );
-
-        OutputDebugStringA(buffer);
-    }
-
-    //if (_shader == nullptr)
-    //    return;
+    //{
+    //    OutputDebugStringA("SphereCollider DebugRender\n");
     //
-    //if (_vertexBuffer == nullptr)
-    //    return;
+    //    Vec3 pos = GetTransform()->GetPosition();
     //
-    //_shader->PushGlobalData(
-    //    Camera::S_MatView,
-    //    Camera::S_MatProjection);
+    //    char buffer[256];
+    //    sprintf_s(
+    //        buffer,
+    //        "Collider : %f %f %f\n",
+    //        pos.x, pos.y, pos.z
+    //    );
     //
-    //TransformDesc desc;
-    //
-    //Matrix scale =
-    //    Matrix::CreateScale(_radius);
-    //
-    //desc.W =
-    //    scale * GetTransform()->GetWorldMatrix();
-    //
-    //_shader->PushTransformData(desc);
-    //
-    //_vertexBuffer->PushData();
-    //
-    //// ★ 디버그 렌더링은 선으로 그린다.
-    //DC->IASetPrimitiveTopology(
-    //    D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
-    //
-    //_shader->Draw(
-    //    0,
-    //    0,
-    //    _vertexCount);
-
-
+    //    OutputDebugStringA(buffer);
+    //}
 
     if (_shader == nullptr || _vertexBuffer == nullptr)
         return;

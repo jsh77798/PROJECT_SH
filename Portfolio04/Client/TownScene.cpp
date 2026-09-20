@@ -22,6 +22,9 @@
 #include "ModelAnimator.h"
 #include "SphereCollider.h"
 #include "AABBBoxCollider.h"
+#include "SoundManager.h"
+#include "HealthComponent.h"
+#include "Scene.h"
 
 TownScene::TownScene()
     : mPlayer(nullptr)
@@ -34,6 +37,68 @@ TownScene::~TownScene()
 
 void TownScene::Start()
 {
+    // ==========================
+    // Sound
+    // ==========================
+    auto& sound = SoundManager::Get();
+
+    if (sound.Init())
+    {
+        sound.SetMasterVolume(1.f);
+        sound.SetBGMVolume(0.35f);
+        sound.SetSFXVolume(0.8f);
+
+        // Player
+        sound.LoadSFX(
+            "Footstep01",
+            "../Resources/Sounds/SFX/SH_Footstep_Hard.wav",
+            4
+        );
+
+        sound.LoadSFX(
+            "Footstep02",
+            "../Resources/Sounds/SFX/SH_Footstep_Hard.wav",
+            4
+        );
+
+        sound.LoadSFX(
+            "PipeSwing",
+            "../Resources/Sounds/SFX/SH_Weapons_Pipe_Swing.wav"
+        );
+
+        sound.LoadSFX(
+            "PipeHit",
+            "../Resources/Sounds/SFX/SH-Demon-Bird-Hitting-the-Ground.wav"
+        );
+
+
+
+        // DoorOpen
+        sound.LoadSFX(
+            "DoorOpen",
+            "../Resources/Sounds/SFX/SH-Door-Open-01.wav"
+        );
+
+        // BGM
+        sound.PlayBGM(
+            "../Resources/Sounds/BGM/SH-Disc1-08-NightmarishEnd.wav"
+        );
+        
+        //sound.PlayBGM(
+        //    "../Resources/Sounds/BGM/SH-Disc1-02-FogEnsues.wav"
+        //);
+
+        sound.LoadTensionBGM(
+            "../Resources/Sounds/BGM/SH_Radio_01.wav"
+        );
+        sound.SetTensionVolume(0.55f);
+        sound.SetTensionActive(false);
+        _tensionActive = false;
+    }
+
+
+
+
     _shader = make_shared<Shader>(L"SkinnedLit.fx");
     shared_ptr<Shader> _mapShader = make_shared<Shader>(L"Map.fx");
     shared_ptr<Shader> _debugShader = make_shared<Shader>(L"Debug.fx");
@@ -44,6 +109,7 @@ void TownScene::Start()
     auto map = make_shared<Map>();
     map->Init(_mapShader, _debugShader);
     CUR_SCENE->Add(map);
+    CUR_SCENE->SetSnowEnabled(true);
 
     // ==========================
     // 환경 설정
@@ -357,8 +423,73 @@ void TownScene::Start()
 
 void TownScene::Update()
 {
+    Scene::Update();
+
+    auto& sound = SoundManager::Get();
+
+    bool enemyNearby = false;
+
+    if (mPlayer)
+    {
+        auto playerHealth =
+            mPlayer->GetHealthComponent();
+
+        if (playerHealth && !playerHealth->IsDead())
+        {
+            const Vec3 playerPosition =
+                mPlayer->GetTransform()->GetPosition();
+
+            // 활성화 중에는 더 멀어져야 해제
+            const float range =
+                _tensionActive
+                ? _tensionLeaveRange
+                : _tensionEnterRange;
+
+            const float rangeSquared = range * range;
+
+            for (const auto& object :
+                CUR_SCENE->GetObjects())
+            {
+                auto enemy =
+                    dynamic_pointer_cast<Enemy>(object);
+
+                if (!enemy)
+                    continue;
+
+                auto health =
+                    enemy->GetHealthComponent();
+
+                if (!health ||
+                    health->IsDead() ||
+                    enemy->IsDead())
+                {
+                    continue;
+                }
+
+                const Vec3 difference =
+                    enemy->GetTransform()->GetPosition()
+                    - playerPosition;
+
+                // 높이 차이도 포함한 3차원 거리
+                if (difference.LengthSquared() <=
+                    rangeSquared)
+                {
+                    enemyNearby = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    _tensionActive = enemyNearby;
+
+    sound.SetTensionActive(_tensionActive);
+
+    // 매 프레임 한 번만 호출
+    sound.Update(TIME->GetDeltaTime());
 }
 
 void TownScene::Render()
 {
+    Scene::Render();
 }

@@ -1,13 +1,12 @@
 #include "pch.h"
 #include "DoorTransition.h"
-
 #include "Player.h"
 #include "Model.h"
 #include "CharacterMovement.h"
 #include "Scene.h"
-
 #include <cmath>
 #include <unordered_map>
+#include "SoundManager.h"
 
 void DoorTransition::Init(
     shared_ptr<Player> player,
@@ -76,11 +75,44 @@ void DoorTransition::Init(
             continue;
         }
 
-        // 밖 -> 안
-        AddLink(outTrigger->second, inExit->second);
+        const std::string outsideBGM =
+            "../Resources/Sounds/BGM/SH-Disc1-08-NightmarishEnd.wav";
 
-        // 안 -> 밖
-        AddLink(inTrigger->second, outExit->second);
+        const std::string insideBGM =
+            "../Resources/Sounds/BGM/SH-Disc1-02-FogEnsues.wav";
+
+        // 기본값: 실내 방 사이의 문
+        std::string inSideBGM = insideBGM;
+        std::string outSideBGM = insideBGM;
+
+        bool inSideIndoor = true;
+        bool outSideIndoor = true;
+
+        // 건물 출입문: 실제 사용하는 문 번호로 지정
+        if (prefix == L"DOOR_01")
+        {
+            inSideBGM = insideBGM;
+            outSideBGM = outsideBGM;
+
+            inSideIndoor = true;
+            outSideIndoor = false;
+        }
+
+        // OUT -> IN
+        AddLink(
+            outTrigger->second,
+            inExit->second,
+            inSideBGM,
+            inSideIndoor
+        );
+
+        // IN -> OUT
+        AddLink(
+            inTrigger->second,
+            outExit->second,
+            outSideBGM,
+            outSideIndoor
+        );
     }
 
     if (_links.empty())
@@ -104,9 +136,14 @@ void DoorTransition::Init(
 
 void DoorTransition::AddLink(
     const Matrix& triggerWorld,
-    const Matrix& exitWorld)
+    const Matrix& exitWorld,
+    const std::string& bgmPath,
+    bool destinationIndoor)
 {
     DoorLink link;
+
+    link.bgmPath = bgmPath;
+    link.destinationIndoor = destinationIndoor;
 
     link.triggerPosition = XMVector3TransformCoord(
         Vec3::Zero,
@@ -295,6 +332,9 @@ void DoorTransition::Update()
             player->Stop();
             movement->SetMovementPaused(true);
 
+            // 사운드
+            SoundManager::Get().PlaySFX("DoorOpen");
+
             _alpha = 0.f;
             CUR_SCENE->SetFadeAlpha(_alpha);
 
@@ -327,11 +367,24 @@ void DoorTransition::Update()
             _activeLink.exitYaw
         );
 
-        if (moved && _resetCamera)
-            _resetCamera();
+        if (moved)
+        {
+            if (_resetCamera)
+                _resetCamera();
 
-        // 이번 프레임도 검게 유지:
-        // PostLateUpdate에서 카메라가 새 위치로 갱신됨
+            // 실내이면 눈 끄기, 실외이면 켜기
+            CUR_SCENE->SetSnowEnabled(
+                !_activeLink.destinationIndoor
+            );
+
+            if (!_activeLink.bgmPath.empty())
+            {
+                SoundManager::Get().PlayBGM(
+                    _activeLink.bgmPath
+                );
+            }
+        }
+
         CUR_SCENE->SetFadeAlpha(1.f);
 
         _waitUntilOutside = true;

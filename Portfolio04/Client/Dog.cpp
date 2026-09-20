@@ -35,6 +35,8 @@ void Dog::Init()
 	model->ReadAnimation(ASSIMP->AnimImporter(L"Dog/Dog_Idle.fbx"));
 	model->ReadAnimation(ASSIMP->AnimImporter(L"Dog/Dog_Move.fbx"));
 	model->ReadAnimation(ASSIMP->AnimImporter(L"Dog/Dog_Attack1.fbx"));
+	model->ReadAnimation(ASSIMP->AnimImporter(L"Dog/Dog_Hit1.fbx"));
+	//model->ReadAnimation(ASSIMP->AnimImporter(L"Dog/Dog_Hit2.fbx"));
 	model->ReadAnimation(ASSIMP->AnimImporter(L"Dog/Dog_Death.fbx"));
 	//////////////////////////////////////////////////////////////////////
 
@@ -68,6 +70,7 @@ void Dog::Init()
 	_animMap[EnemyState::Move] = animator->MakeAnimData("Move", model->FindAnimation(L"Dog/Dog_Move"));
 	_animMap[EnemyState::Attack] = animator->MakeAnimData("Attack", model->FindAnimation(L"Dog/Dog_Attack1"), false);
 	_animMap[EnemyState::Dead] = animator->MakeAnimData("Dead", model->FindAnimation(L"Dog/Dog_Death"), false);
+	_animMap[EnemyState::Hit] = animator->MakeAnimData("Hit", model->FindAnimation(L"Dog/Dog_Hit1"), false);
 
 	// * Dog *
 	GetOrAddTransform()->SetPosition(Vec3{ -5.0f, 5.0f, 5.0f });

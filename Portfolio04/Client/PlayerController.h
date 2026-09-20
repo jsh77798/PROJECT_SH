@@ -22,4 +22,6 @@ private:
 	
 private:
     float _rotSpeed = 2.5f;
+    float _walkSpeed = 5.f;
+    float _runSpeed = 8.f;
 };

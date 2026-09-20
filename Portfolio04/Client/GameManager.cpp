@@ -16,7 +16,8 @@ GameManager& GameManager::Get()
 void GameManager::Init()
 {
     Scene = make_shared<TownScene>();
-    Scene->Start();
+    //Scene->Start();
+    SCENE->ChangeScene(Scene);
 }
 
 // =========================

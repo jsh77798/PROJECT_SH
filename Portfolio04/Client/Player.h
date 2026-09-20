@@ -13,9 +13,11 @@ enum class PlayerState : uint8
     RightTurn,
     Move,
     BackMove,
+    Run,
     Attack,
     PipeAttack,
     Dead,
+    Hit,
 };
 
 class Player : public Character
@@ -32,6 +34,7 @@ public:
 
 	void Move();
     void BackMove();
+    void Run();
     void Turn(float direction);
     void Stop();
     void Attack();
@@ -50,6 +53,9 @@ public:
 
     void ResetCameraAfterTeleport();
 
+    void UpdateFootsteps();
+    void PlayFootstep(bool running);
+
 private:
     shared_ptr<GameObject> _modelObject;
     shared_ptr<GameObject> _camera;
@@ -63,5 +69,28 @@ private:
     // 실제 휘두르는 구간에 맞춰 조절
     float _attackHitStart = 15.f / 48.f;
     float _attackHitEnd = 23.f / 48.f;
+
+    float _walkSpeed = 5.f;
+    float _runSpeed = 8.f;
+
+    Vec3 _previousFootstepPosition = Vec3::Zero;
+    bool _footstepPositionInitialized = false;
+
+    string _footstepAnimation;
+    float _previousFootstepProgress = 0.f;
+    bool _footstepProgressInitialized = false;
+
+    int _nextFootstepSound = 0;
+
+    // 한 애니메이션 주기에서 양발이 닿는 시점
+    // 우선 예시 값이며 실제 애니메이션에 맞춰 조절
+    float _walkFootstepA = 0.2f;
+    float _walkFootstepB = 0.7f;
+
+    float _runFootstepA = 0.2f;
+    float _runFootstepB = 0.7f;
+
+    float _backFootstepA = 0.2f;
+    float _backFootstepB = 0.7f;
 };
 

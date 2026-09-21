@@ -34,6 +34,12 @@ private:
 
         std::string bgmPath;
         bool destinationIndoor = false;
+
+        std::string openSound = "DoorWood";
+        std::string lockedSound = "DoorLocked";
+
+        // 비어 있으면 열쇠가 필요 없는 문
+        std::string requiredKey;
     };
 
     bool IsInside(
@@ -45,7 +51,9 @@ private:
         const Matrix& triggerWorld,
         const Matrix& exitWorld,
         const std::string& bgmPath,
-        bool destinationIndoor);
+        bool destinationIndoor,
+        const std::string& openSound,
+        const std::string& requiredKey);
 
 private:
     weak_ptr<Player> _player;

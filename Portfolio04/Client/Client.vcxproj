@@ -33,6 +33,7 @@
     <ClInclude Include="EnemyController.h" />
     <ClInclude Include="GameManager.h" />
     <ClInclude Include="HealthComponent.h" />
+    <ClInclude Include="KeyItem.h" />
     <ClInclude Include="Main.h" />
     <ClInclude Include="Map.h" />
     <ClInclude Include="pch.h" />
@@ -58,6 +59,7 @@
     <ClCompile Include="EnemyController.cpp" />
     <ClCompile Include="GameManager.cpp" />
     <ClCompile Include="HealthComponent.cpp" />
+    <ClCompile Include="KeyItem.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Map.cpp" />
     <ClCompile Include="pch.cpp">

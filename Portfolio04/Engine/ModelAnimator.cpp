@@ -11,7 +11,8 @@ ModelAnimator::ModelAnimator(shared_ptr<Shader> shader)
 	: Super(ComponentType::Animator), _shader(shader)
 {
 	// TEST
-	_tweenDesc.next.animIndex = -1; //rand() % 3;
+	//_tweenDesc.next.animIndex = -1; //rand() % 3;
+	//_tweenDesc.tweenSumTime += rand() % 100;
 	_tweenDesc.tweenSumTime += rand() % 100;
 }
 
@@ -95,110 +96,241 @@ void ModelAnimator::Update()
 {
 	UpdateTweenData();
 
-	UpdateBoneTransforms();
+	//UpdateBoneTransforms();
 
 	UpdateCurrentBoneTransforms();
 }
 
 void ModelAnimator::UpdateTweenData()
 {
+	//TweenDesc& desc = _tweenDesc;
+	//
+	//desc.curr.sumTime += DT;
+	//// 현재 애니메이션
+	//{
+	//	shared_ptr<ModelAnimation> currentAnim = _model->GetAnimationByIndex(desc.curr.animIndex);
+	//	if (currentAnim)
+	//	{
+	//		float timePerFrame = 1 / (currentAnim->frameRate * desc.curr.speed);
+	//		if (desc.curr.sumTime >= timePerFrame)
+	//		{
+	//			//desc.curr.sumTime = 0;
+	//			//desc.curr.currFrame = (desc.curr.currFrame + 1) % currentAnim->frameCount;
+	//			//desc.curr.nextFrame = (desc.curr.currFrame + 1) % currentAnim->frameCount;
+	//
+	//			desc.curr.sumTime -= timePerFrame;
+	//
+	//			if (desc.curr.currFrame >= currentAnim->frameCount - 1)
+	//			{
+	//				if (_loop)
+	//				{
+	//					desc.curr.currFrame = 0;
+	//					desc.curr.nextFrame =
+	//						currentAnim->frameCount > 1 ? 1 : 0;
+	//				}
+	//				else
+	//				{
+	//					_isAnimationFinished = true;
+	//
+	//					desc.curr.currFrame =
+	//						currentAnim->frameCount - 1;
+	//
+	//					desc.curr.nextFrame =
+	//						desc.curr.currFrame;
+	//				}
+	//			}
+	//			else
+	//			{
+	//				//desc.curr.currFrame++;
+	//				//
+	//				//desc.curr.nextFrame =
+	//				//	(desc.curr.currFrame + 1) %
+	//				//	currentAnim->frameCount;
+	//
+	//				desc.curr.currFrame++;
+	//
+	//				if (desc.curr.currFrame + 1 < currentAnim->frameCount)
+	//				{
+	//					desc.curr.nextFrame = desc.curr.currFrame + 1;
+	//				}
+	//				else
+	//				{
+	//					// 반복이면 첫 프레임으로 연결
+	//					// 반복하지 않으면 마지막 프레임 유지
+	//					desc.curr.nextFrame =
+	//						_loop ? 0 : desc.curr.currFrame;
+	//				}
+	//			}
+	//		}
+	//
+	//		desc.curr.ratio = (desc.curr.sumTime / timePerFrame);
+	//	}
+	//}
+	//
+	// //다음 애니메이션이 예약 되어 있다면
+	//if (desc.next.animIndex >= 0)
+	//{
+	//	desc.tweenSumTime += DT;
+	//	desc.tweenRatio = desc.tweenSumTime / desc.tweenDuration;
+	//	
+	//	if (desc.tweenRatio >= 1.f)
+	//	{
+	//		// 애니메이션 교체 성공
+	//		desc.curr = desc.next;
+	//		desc.ClearNextAnim();
+	//
+	//		_isAnimationFinished = false;
+	//	}
+	//	else
+	//	{
+	//		// 교체중
+	//		shared_ptr<ModelAnimation> nextAnim = _model->GetAnimationByIndex(desc.next.animIndex);
+	//		desc.next.sumTime += DT;
+	//	
+	//		float timePerFrame = 1.f / (nextAnim->frameRate * desc.next.speed);
+	//	
+	//		if (desc.next.sumTime >= timePerFrame)
+	//		{
+	//			desc.next.sumTime -= timePerFrame;
+	//	
+	//			desc.next.currFrame = (desc.next.currFrame + 1) % nextAnim->frameCount;
+	//			desc.next.nextFrame = (desc.next.currFrame + 1) % nextAnim->frameCount;
+	//		}
+	//	
+	//		desc.next.ratio = desc.next.sumTime / timePerFrame;
+	//	}
+	//
+	//}
+
+	if (!_model)
+		return;
+
 	TweenDesc& desc = _tweenDesc;
 
-	desc.curr.sumTime += DT;
-	// 현재 애니메이션
-	{
-		shared_ptr<ModelAnimation> currentAnim = _model->GetAnimationByIndex(desc.curr.animIndex);
-		if (currentAnim)
+	const float dt = DT > 0.f ? DT : 0.f;
+
+	// 현재/다음 애니메이션에 동일한 프레임 진행 규칙 적용
+	auto advance = [&](auto& frame, bool loop) -> bool
 		{
-			float timePerFrame = 1 / (currentAnim->frameRate * desc.curr.speed);
-			if (desc.curr.sumTime >= timePerFrame)
+			if (frame.animIndex < 0)
+				return false;
+
+			auto animation =
+				_model->GetAnimationByIndex(frame.animIndex);
+
+			if (!animation || animation->frameCount == 0)
+				return false;
+
+			const uint32 frameCount = animation->frameCount;
+			const uint32 lastFrame = frameCount - 1;
+
+			if (frameCount == 1)
 			{
-				//desc.curr.sumTime = 0;
-				//desc.curr.currFrame = (desc.curr.currFrame + 1) % currentAnim->frameCount;
-				//desc.curr.nextFrame = (desc.curr.currFrame + 1) % currentAnim->frameCount;
+				frame.currFrame = 0;
+				frame.nextFrame = 0;
+				frame.sumTime = 0.f;
+				frame.ratio = 0.f;
 
-				desc.curr.sumTime -= timePerFrame;
+				return !loop;
+			}
 
-				if (desc.curr.currFrame >= currentAnim->frameCount - 1)
+			// 비반복 애니메이션은 마지막 자세 유지
+			if (!loop && frame.currFrame >= lastFrame)
+			{
+				frame.currFrame = lastFrame;
+				frame.nextFrame = lastFrame;
+				frame.sumTime = 0.f;
+				frame.ratio = 0.f;
+
+				return true;
+			}
+
+			if (animation->frameRate <= 0.f || frame.speed <= 0.f)
+				return false;
+
+			const float timePerFrame =
+				1.f / (animation->frameRate * frame.speed);
+
+			frame.sumTime += dt;
+
+			// 큰 DT에서도 필요한 만큼 프레임 진행
+			while (frame.sumTime >= timePerFrame)
+			{
+				frame.sumTime -= timePerFrame;
+
+				if (loop)
 				{
-					if (_loop)
-					{
-						desc.curr.currFrame = 0;
-						desc.curr.nextFrame =
-							currentAnim->frameCount > 1 ? 1 : 0;
-					}
-					else
-					{
-						_isAnimationFinished = true;
-
-						desc.curr.currFrame =
-							currentAnim->frameCount - 1;
-
-						desc.curr.nextFrame =
-							desc.curr.currFrame;
-					}
+					frame.currFrame =
+						(frame.currFrame + 1) % frameCount;
 				}
 				else
 				{
-					//desc.curr.currFrame++;
-					//
-					//desc.curr.nextFrame =
-					//	(desc.curr.currFrame + 1) %
-					//	currentAnim->frameCount;
+					++frame.currFrame;
 
-					desc.curr.currFrame++;
+					if (frame.currFrame >= lastFrame)
+					{
+						frame.currFrame = lastFrame;
+						frame.nextFrame = lastFrame;
+						frame.sumTime = 0.f;
+						frame.ratio = 0.f;
 
-					if (desc.curr.currFrame + 1 < currentAnim->frameCount)
-					{
-						desc.curr.nextFrame = desc.curr.currFrame + 1;
-					}
-					else
-					{
-						// 반복이면 첫 프레임으로 연결
-						// 반복하지 않으면 마지막 프레임 유지
-						desc.curr.nextFrame =
-							_loop ? 0 : desc.curr.currFrame;
+						return true;
 					}
 				}
 			}
 
-			desc.curr.ratio = (desc.curr.sumTime / timePerFrame);
-		}
+			frame.nextFrame = loop
+				? (frame.currFrame + 1) % frameCount
+				: frame.currFrame + 1;
+
+			frame.ratio = frame.sumTime / timePerFrame;
+
+			return false;
+		};
+
+	const bool currentFinished =
+		advance(desc.curr, _loop);
+
+	if (desc.next.animIndex < 0)
+	{
+		_isAnimationFinished = currentFinished;
+		return;
 	}
 
-	 //다음 애니메이션이 예약 되어 있다면
-	if (desc.next.animIndex >= 0)
+	// 전환 중에도 다음 애니메이션의 반복 설정을 별도로 사용
+	const bool nextFinished =
+		advance(desc.next, _nextLoop);
+
+	desc.tweenSumTime += dt;
+
+	if (desc.tweenDuration <= 0.f)
 	{
-		desc.tweenSumTime += DT;
-		desc.tweenRatio = desc.tweenSumTime / desc.tweenDuration;
-		
-		if (desc.tweenRatio >= 1.f)
-		{
-			// 애니메이션 교체 성공
-			desc.curr = desc.next;
-			desc.ClearNextAnim();
+		desc.tweenRatio = 1.f;
+	}
+	else
+	{
+		desc.tweenRatio =
+			desc.tweenSumTime / desc.tweenDuration;
 
-			_isAnimationFinished = false;
-		}
-		else
-		{
-			// 교체중
-			shared_ptr<ModelAnimation> nextAnim = _model->GetAnimationByIndex(desc.next.animIndex);
-			desc.next.sumTime += DT;
-		
-			float timePerFrame = 1.f / (nextAnim->frameRate * desc.next.speed);
-		
-			if (desc.next.sumTime >= timePerFrame)
-			{
-				desc.next.sumTime -= timePerFrame;
-		
-				desc.next.currFrame = (desc.next.currFrame + 1) % nextAnim->frameCount;
-				desc.next.nextFrame = (desc.next.currFrame + 1) % nextAnim->frameCount;
-			}
-		
-			desc.next.ratio = desc.next.sumTime / timePerFrame;
-		}
+		if (desc.tweenRatio > 1.f)
+			desc.tweenRatio = 1.f;
+	}
 
+	// 전환 중에는 외부에서 완료로 처리하지 않음
+	_isAnimationFinished = false;
+
+	if (desc.tweenRatio >= 1.f)
+	{
+		desc.curr = desc.next;
+
+		// 다음 애니메이션이 현재 애니메이션이 되는 시점에 반영
+		_loop = _nextLoop;
+
+		desc.ClearNextAnim();
+		desc.tweenSumTime = 0.f;
+		desc.tweenRatio = 0.f;
+
+		_isAnimationFinished = nextFinished;
 	}
 }
 
@@ -280,84 +412,232 @@ void ModelAnimator::UpdateBoneTransforms()
 
 void ModelAnimator::UpdateCurrentBoneTransforms()
 {
-	if (_model == nullptr)
+	//if (_model == nullptr)
+	//	return;
+	//
+	//TweenDesc& desc = _tweenDesc;
+	//
+	//shared_ptr<ModelAnimation> animation =
+	//	_model->GetAnimationByIndex(desc.curr.animIndex);
+	//
+	//if (animation == nullptr)
+	//	return;
+	//
+	//uint32 boneCount = _model->GetBoneCount();
+	//
+	//_currentBoneTransforms.resize(
+	//	boneCount,
+	//	Matrix::Identity);
+	//
+	//uint32 frameIndex = desc.curr.currFrame;
+	//
+	//if (frameIndex >= animation->frameCount)
+	//	frameIndex = animation->frameCount - 1;
+	//
+	//for (uint32 b = 0; b < boneCount; b++)
+	//{
+	//	shared_ptr<ModelBone> bone =
+	//		_model->GetBoneByIndex(b);
+	//
+	//	if (bone == nullptr)
+	//		continue;
+	//
+	//	Matrix matAnimation =
+	//		Matrix::Identity;
+	//
+	//	shared_ptr<ModelKeyframe> frame =
+	//		animation->GetKeyframe(bone->name);
+	//
+	//	if (frame != nullptr)
+	//	{
+	//		if (frameIndex >= frame->transforms.size())
+	//			continue;
+	//
+	//		ModelKeyframeData& data =
+	//			frame->transforms[frameIndex];
+	//
+	//		Matrix S;
+	//		Matrix R;
+	//		Matrix T;
+	//
+	//		S = Matrix::CreateScale(
+	//			data.scale.x,
+	//			data.scale.y,
+	//			data.scale.z);
+	//
+	//		R = Matrix::CreateFromQuaternion(
+	//			data.rotation);
+	//
+	//		T = Matrix::CreateTranslation(
+	//			data.translation.x,
+	//			data.translation.y,
+	//			data.translation.z);
+	//
+	//		matAnimation = S * R * T;
+	//	}
+	//
+	//	Matrix parentMatrix =
+	//		Matrix::Identity;
+	//
+	//	if (bone->parentIndex >= 0 &&
+	//		bone->parentIndex < boneCount)
+	//	{
+	//		parentMatrix =
+	//			_currentBoneTransforms[
+	//				bone->parentIndex];
+	//	}
+	//
+	//	_currentBoneTransforms[b] =
+	//		matAnimation * parentMatrix;
+	//}
+
+	if (!_model)
 		return;
 
-	TweenDesc& desc = _tweenDesc;
+	const uint32 boneCount = _model->GetBoneCount();
 
-	shared_ptr<ModelAnimation> animation =
-		_model->GetAnimationByIndex(desc.curr.animIndex);
-
-	if (animation == nullptr)
+	if (boneCount == 0)
 		return;
 
-	uint32 boneCount = _model->GetBoneCount();
+	// 특정 애니메이션의 특정 프레임에서
+	// 부모 변환까지 포함한 본 행렬 계산
+	auto buildPose = [&](
+		int32 animIndex,
+		uint32 frameIndex,
+		vector<Matrix>& pose) -> bool
+		{
+			pose.assign(boneCount, Matrix::Identity);
 
-	_currentBoneTransforms.resize(
-		boneCount,
-		Matrix::Identity);
+			if (animIndex < 0)
+				return false;
 
-	uint32 frameIndex = desc.curr.currFrame;
+			auto animation =
+				_model->GetAnimationByIndex(animIndex);
 
-	if (frameIndex >= animation->frameCount)
-		frameIndex = animation->frameCount - 1;
+			if (!animation || animation->frameCount == 0)
+				return false;
 
-	for (uint32 b = 0; b < boneCount; b++)
+			if (frameIndex >= animation->frameCount)
+				frameIndex = animation->frameCount - 1;
+
+			for (uint32 i = 0; i < boneCount; ++i)
+			{
+				auto bone = _model->GetBoneByIndex(i);
+
+				if (!bone)
+					continue;
+
+				Matrix local = Matrix::Identity;
+
+				auto keyframe =
+					animation->GetKeyframe(bone->name);
+
+				if (keyframe &&
+					frameIndex < keyframe->transforms.size())
+				{
+					const auto& data =
+						keyframe->transforms[frameIndex];
+
+					Matrix scale = Matrix::CreateScale(
+						data.scale.x,
+						data.scale.y,
+						data.scale.z
+					);
+
+					Matrix rotation =
+						Matrix::CreateFromQuaternion(data.rotation);
+
+					Matrix translation = Matrix::CreateTranslation(
+						data.translation.x,
+						data.translation.y,
+						data.translation.z
+					);
+
+					local = scale * rotation * translation;
+				}
+
+				// 
+				if (bone->parentIndex >= 0 &&
+					static_cast<uint32>(bone->parentIndex) < i)
+				{
+					pose[i] =
+						local * pose[bone->parentIndex];
+				}
+				else
+				{
+					pose[i] = local;
+				}
+			}
+
+			return true;
+		};
+
+	auto clampRatio = [](float value)
+		{
+			if (value < 0.f) return 0.f;
+			if (value > 1.f) return 1.f;
+			return value;
+		};
+
+	//
+	auto samplePose = [&](
+		const auto& frame,
+		vector<Matrix>& result) -> bool
+		{
+			vector<Matrix> poseA;
+			vector<Matrix> poseB;
+
+			if (!buildPose(
+				frame.animIndex, frame.currFrame, poseA))
+			{
+				return false;
+			}
+
+			if (!buildPose(
+				frame.animIndex, frame.nextFrame, poseB))
+			{
+				return false;
+			}
+
+			const float ratio = clampRatio(frame.ratio);
+
+			result.resize(boneCount);
+
+			for (uint32 i = 0; i < boneCount; ++i)
+			{
+				result[i] =
+					Matrix::Lerp(poseA[i], poseB[i], ratio);
+			}
+
+			return true;
+		};
+
+	vector<Matrix> currentPose;
+
+	if (!samplePose(_tweenDesc.curr, currentPose))
+		return;
+
+	if (_tweenDesc.next.animIndex >= 0)
 	{
-		shared_ptr<ModelBone> bone =
-			_model->GetBoneByIndex(b);
+		vector<Matrix> nextPose;
 
-		if (bone == nullptr)
-			continue;
-
-		Matrix matAnimation =
-			Matrix::Identity;
-
-		shared_ptr<ModelKeyframe> frame =
-			animation->GetKeyframe(bone->name);
-
-		if (frame != nullptr)
+		if (samplePose(_tweenDesc.next, nextPose))
 		{
-			if (frameIndex >= frame->transforms.size())
-				continue;
+			const float ratio =
+				clampRatio(_tweenDesc.tweenRatio);
 
-			ModelKeyframeData& data =
-				frame->transforms[frameIndex];
-
-			Matrix S;
-			Matrix R;
-			Matrix T;
-
-			S = Matrix::CreateScale(
-				data.scale.x,
-				data.scale.y,
-				data.scale.z);
-
-			R = Matrix::CreateFromQuaternion(
-				data.rotation);
-
-			T = Matrix::CreateTranslation(
-				data.translation.x,
-				data.translation.y,
-				data.translation.z);
-
-			matAnimation = S * R * T;
+			for (uint32 i = 0; i < boneCount; ++i)
+			{
+				currentPose[i] = Matrix::Lerp(
+					currentPose[i],
+					nextPose[i],
+					ratio
+				);
+			}
 		}
-
-		Matrix parentMatrix =
-			Matrix::Identity;
-
-		if (bone->parentIndex >= 0 &&
-			bone->parentIndex < boneCount)
-		{
-			parentMatrix =
-				_currentBoneTransforms[
-					bone->parentIndex];
-		}
-
-		_currentBoneTransforms[b] =
-			matAnimation * parentMatrix;
 	}
+
+	_currentBoneTransforms = std::move(currentPose);
 }
 
 void ModelAnimator::RenderInstancing(shared_ptr<class InstancingBuffer>& buffer)
@@ -414,29 +694,6 @@ InstanceID ModelAnimator::GetInstanceID()
 
 void ModelAnimator::Play(string animName)
 {
-	//auto iter = _animDataMap.find(animName);
-	//if (iter == _animDataMap.end())	
-	//	return;
-	//
-	//AnimData animData = _animDataMap[animName];
-	//
-	//if (_tweenDesc.curr.animIndex == animData.animIndex)
-	//	return;
-	//
-	//_tweenDesc.next.animIndex = animData.animIndex;
-	//_loop = animData.animLoop;
-	//
-	//_tweenDesc.next.currFrame = 0;
-	//_tweenDesc.next.nextFrame = 1;
-	//_tweenDesc.next.sumTime = 0.f;
-	//_tweenDesc.next.ratio = 0.f;
-	//_tweenDesc.next.speed = animData.speed;
-	//
-	//_tweenDesc.tweenSumTime = 0.f;
-	//_tweenDesc.tweenRatio = 0.f;
-	//
-	//_tweenDesc.tweenDuration = 0.2f;
-
 	auto iter = _animDataMap.find(animName);
 	if (iter == _animDataMap.end())
 		return;
@@ -484,7 +741,9 @@ void ModelAnimator::Play(string animName)
 	desc.tweenRatio = 0.f;
 	desc.tweenDuration = 0.2f;
 
-	_loop = animData.animLoop;
+	//_loop = animData.animLoop;
+	//_isAnimationFinished = false;
+	_nextLoop = animData.animLoop;
 	_isAnimationFinished = false;
 }
 
@@ -636,10 +895,32 @@ void ModelAnimator::CreateAnimationTransform(uint32 index)
 		{
 			shared_ptr<ModelBone> bone = _model->GetBoneByIndex(b);
 
-			Matrix matAnimation;
+			//Matrix matAnimation;
+			//
+			//shared_ptr<ModelKeyframe> frame = animation->GetKeyframe(bone->name);
 
-			shared_ptr<ModelKeyframe> frame = animation->GetKeyframe(bone->name);
-			if (frame != nullptr)
+			Matrix bindLocal = bone->transform;
+
+			if (bone->parentIndex >= 0)
+			{
+				auto parent =
+					_model->GetBoneByIndex(bone->parentIndex);
+
+				if (parent)
+				{
+					bindLocal =
+						bone->transform * parent->transform.Invert();
+				}
+			}
+
+			Matrix matAnimation = bindLocal;
+
+			auto frame = animation->GetKeyframe(bone->name);
+
+
+
+
+			if (frame != nullptr && f < frame->transforms.size())
 			{
 				ModelKeyframeData& data = frame->transforms[f];
 
@@ -650,10 +931,10 @@ void ModelAnimator::CreateAnimationTransform(uint32 index)
 
 				matAnimation = S * R * T;
 			}
-			else
-			{
-				matAnimation = Matrix::Identity;
-			}
+			//else
+			//{
+			//	matAnimation = Matrix::Identity;
+			//}
 
 			// [ !!!!!!! ]
 			Matrix toRootMatrix = bone->transform;

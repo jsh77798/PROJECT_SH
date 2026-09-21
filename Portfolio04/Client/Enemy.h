@@ -53,6 +53,11 @@ public:
             _animMap.find(EnemyState::LieDown) != _animMap.end();
     }
 
+    bool CanBeKicked() const
+    {
+        return _state == EnemyState::Thanatosis;
+    }
+
     bool IsDead() const
     {
         return _state == EnemyState::Dead;

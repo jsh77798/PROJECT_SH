@@ -33,6 +33,32 @@ void ModelRenderer::RenderInstancing(shared_ptr<class InstancingBuffer>& buffer)
 	if (_model == nullptr)
 		return;
 
+	// 임시 진단
+	if (_model->GetMeshes().size() == 295)
+	{
+		const uint32 meshCount =
+			static_cast<uint32>(_model->GetMeshes().size());
+
+		const uint32 boneCount =
+			_model->GetBoneCount();
+
+		const uint32 instanceCount =
+			buffer->GetCount();
+
+		char message[256];
+
+		sprintf_s(
+			message,
+			"[Map Render] meshes=%u, nodes=%u, instances=%u, pass=%u\n",
+			meshCount,
+			boneCount,
+			instanceCount,
+			static_cast<unsigned int>(_pass)
+		);
+
+		OutputDebugStringA(message); // 여기에 중단점
+	}
+
 	// GlobalData
 	_shader->PushGlobalData(Camera::S_MatView, Camera::S_MatProjection);
 
@@ -59,17 +85,24 @@ void ModelRenderer::RenderInstancing(shared_ptr<class InstancingBuffer>& buffer)
 	const uint32 boneCount = _model->GetBoneCount();
 
 	// CPU 배열에 저장할 수 있는 행렬 개수
-	const uint32 capacity = static_cast<uint32>(
+	const uint32 capacity = 
 		sizeof(boneDesc.transforms) /
-		sizeof(boneDesc.transforms[0])
-		);
+		sizeof(boneDesc.transforms[0]);
 
 	// 배열 범위를 초과하면 렌더링 중단
 	if (boneCount > capacity)
 	{
-		OutputDebugStringA(
-			"ModelRenderer: bone count exceeds array capacity.\n"
+		char message[256];
+
+		sprintf_s(
+			message,
+			"[ModelRenderer] Node overflow: count=%u, capacity=%zu\n",
+			boneCount,
+			capacity
 		);
+
+		OutputDebugStringA(message);
+		assert(false);
 		return;
 	}
 

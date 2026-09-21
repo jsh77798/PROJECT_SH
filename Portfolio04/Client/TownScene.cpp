@@ -25,6 +25,7 @@
 #include "SoundManager.h"
 #include "HealthComponent.h"
 #include "Scene.h"
+#include "KeyItem.h"
 
 TownScene::TownScene()
     : mPlayer(nullptr)
@@ -71,12 +72,39 @@ void TownScene::Start()
             "../Resources/Sounds/SFX/SH-Demon-Bird-Hitting-the-Ground.wav"
         );
 
+        sound.LoadSFX(
+            "ItemPickup",
+            "../Resources/Sounds/SFX/SH-Menu-Blip-02.wav"
+        );
+        sound.LoadSFX(
+            "PlayerHit",
+            "../Resources/Sounds/SFX/SH_Harry_Grunt.wav"
+        );
 
 
         // DoorOpen
+        //sound.LoadSFX(
+        //    "DoorOpen",
+        //    "../Resources/Sounds/SFX/SH-Door-Open-01.wav"
+        //);
         sound.LoadSFX(
-            "DoorOpen",
+            "DoorWood",
+            "../Resources/Sounds/SFX/SH-Door-Open-02.wav"
+        );
+
+        sound.LoadSFX(
+            "DoorLargeWood",
             "../Resources/Sounds/SFX/SH-Door-Open-01.wav"
+        );
+
+        sound.LoadSFX(
+            "DoorMetal",
+            "../Resources/Sounds/SFX/SH-Door-Open-03.wav"
+        );
+
+        sound.LoadSFX(
+            "DoorLocked",
+            "../Resources/Sounds/SFX/SH-Door-Locked.wav"
         );
 
         // BGM
@@ -97,11 +125,10 @@ void TownScene::Start()
     }
 
 
-
-
     _shader = make_shared<Shader>(L"SkinnedLit.fx");
     shared_ptr<Shader> _mapShader = make_shared<Shader>(L"Map.fx");
     shared_ptr<Shader> _debugShader = make_shared<Shader>(L"Debug.fx");
+
 
     // ==========================
     // Map 持失
@@ -110,6 +137,7 @@ void TownScene::Start()
     map->Init(_mapShader, _debugShader);
     CUR_SCENE->Add(map);
     CUR_SCENE->SetSnowEnabled(true);
+
 
     // ==========================
     // 発井 竺舛
@@ -160,38 +188,6 @@ void TownScene::Start()
 
         CUR_SCENE->SetSkybox(skybox);
     }
-
-    //// ==========================
-    //// Player 持失
-    //// ==========================
-    //mPlayer = make_shared<Player>();
-    //mPlayer->Init();
-    //CUR_SCENE->Add(mPlayer);
-    //
-    //
-    //// ==========================
-    //// Enemy 持失
-    //// ==========================
-    //// Dog
-    //auto mDog = make_shared<Dog>();
-    //mDog->SetTarget(mPlayer);
-    //mDog->Init();
-    //CUR_SCENE->Add(mDog);
-    //// CLD1
-    //auto mCLD1 = make_shared<CLD1>();
-    //mCLD1->SetTarget(mPlayer);
-    //mCLD1->Init();
-    //CUR_SCENE->Add(mCLD1);
-    //// CLD2
-    //auto mCLD2 = make_shared<CLD2>();
-    //mCLD2->SetTarget(mPlayer);
-    //mCLD2->Init();
-    //CUR_SCENE->Add(mCLD2);
-    //// CLD3
-    //auto mCLD3 = make_shared<CLD3>();
-    //mCLD3->SetTarget(mPlayer);
-    //mCLD3->Init();
-    //CUR_SCENE->Add(mCLD3);
 
 
     // ==========================
@@ -261,6 +257,49 @@ void TownScene::Start()
                 collider->Update();
             }
         };
+
+    // ==========================
+    // Item 持失
+    // ==========================
+    for (const auto& point : spawnPoints)
+    {
+        std::string keyID;
+        std::wstring modelFile;
+
+        if (point.name == L"SPAWN_Key_Door03")
+        {
+            keyID = "Key_Door03";
+            modelFile = L"KeyDoor03/Silent Hill 1 Meshes - House Key.fbx";
+        }
+        //else if (point.name == L"SPAWN_Key_Door06")
+        //{
+        //    keyID = "Key_Door06";
+        //    modelFile = L"KeyDoor03/Silent Hill 1 Meshes - House Key.fbx";
+        //}
+        else
+        {
+            continue;
+        }
+
+        const Matrix itemWorld =
+            point.transform * mapWorld;
+
+        Vec3 position = XMVector3TransformCoord(
+            Vec3::Zero,
+            itemWorld
+        );
+
+        auto item = make_shared<KeyItem>();
+
+        item->Init(
+            keyID,
+            modelFile
+        );
+
+        item->GetOrAddTransform()->SetPosition(position);
+
+        CUR_SCENE->Add(item);
+    }
 
     // ==========================
     // 1. Player 持失
@@ -406,7 +445,7 @@ void TownScene::Start()
     //collider->SetRadius(0.5f);
 
     auto floor = make_shared<GameObject>();
-    floor->GetOrAddTransform()->SetPosition(Vec3{ 0.f, 0.5f, 10.f });
+    floor->GetOrAddTransform()->SetPosition(Vec3{ 0.f, 100.f, 10.f });
     floor->GetOrAddTransform()->SetScale(Vec3{ 1.0f, 1.0f, 1.0f });
     floor->AddComponent(make_shared<MeshRenderer>());
     floor->AddComponent(collider);

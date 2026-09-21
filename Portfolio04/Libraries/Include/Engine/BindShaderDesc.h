@@ -37,7 +37,7 @@ struct MaterialDesc
 };
 
 // Bone
-#define MAX_MODEL_TRANSFORMS 250
+#define MAX_MODEL_TRANSFORMS 512
 #define MAX_MODEL_KEYFRAMES 500
 #define MAX_MODEL_INSTANCE 500
 

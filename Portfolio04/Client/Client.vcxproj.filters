@@ -37,6 +37,9 @@
     <Filter Include="Game\Map">
       <UniqueIdentifier>{40e886b7-39a8-4287-bf42-c2ede6e3a87c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Game\Item">
+      <UniqueIdentifier>{b86c8502-2f09-42ab-b287-d048bc2a1054}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -108,6 +111,9 @@
     <ClCompile Include="DoorTransition.cpp">
       <Filter>Game\Map</Filter>
     </ClCompile>
+    <ClCompile Include="KeyItem.cpp">
+      <Filter>Game\Item</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
@@ -178,6 +184,9 @@
     </ClInclude>
     <ClInclude Include="DoorTransition.h">
       <Filter>Game\Map</Filter>
+    </ClInclude>
+    <ClInclude Include="KeyItem.h">
+      <Filter>Game\Item</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

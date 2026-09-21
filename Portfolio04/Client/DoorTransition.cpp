@@ -98,12 +98,41 @@ void DoorTransition::Init(
             outSideIndoor = false;
         }
 
+        // 문 종류별 소리
+        std::string openSound = "DoorWood";
+
+        if (prefix == L"DOOR_02" ||
+            prefix == L"DOOR_05" ||
+            prefix == L"DOOR_06")
+        {
+            openSound = "DoorLargeWood";
+        }
+        else if (prefix == L"DOOR_03" ||
+            prefix == L"DOOR_04")
+        {
+            openSound = "DoorMetal";
+        }
+
+        // 문별 필요한 열쇠
+        std::string requiredKey;
+
+        if (prefix == L"DOOR_03")
+        {
+            requiredKey = "Key_Door03";
+        }
+        else if (prefix == L"DOOR_06")
+        {
+            requiredKey = "Key_Door06";
+        }
+
         // OUT -> IN
         AddLink(
             outTrigger->second,
             inExit->second,
             inSideBGM,
-            inSideIndoor
+            inSideIndoor,
+            openSound,
+            requiredKey
         );
 
         // IN -> OUT
@@ -111,7 +140,9 @@ void DoorTransition::Init(
             inTrigger->second,
             outExit->second,
             outSideBGM,
-            outSideIndoor
+            outSideIndoor,
+            openSound,
+            requiredKey
         );
     }
 
@@ -138,12 +169,17 @@ void DoorTransition::AddLink(
     const Matrix& triggerWorld,
     const Matrix& exitWorld,
     const std::string& bgmPath,
-    bool destinationIndoor)
+    bool destinationIndoor,
+    const std::string& openSound,
+    const std::string& requiredKey)
 {
     DoorLink link;
 
     link.bgmPath = bgmPath;
     link.destinationIndoor = destinationIndoor;
+
+    link.openSound = openSound;
+    link.requiredKey = requiredKey;
 
     link.triggerPosition = XMVector3TransformCoord(
         Vec3::Zero,
@@ -225,69 +261,12 @@ void DoorTransition::Update()
     {
     case Phase::Idle:
     {
+
         const Vec3 footPosition =
             movement->GetFootPosition();
 
-
-
-        static float logTimer = 0.f;
-        logTimer += dt;
-
-        if (logTimer >= 1.f)
-        {
-            logTimer = 0.f;
-
-            char buffer[512];
-
-            sprintf_s(
-                buffer,
-                "[Door Player] foot=(%.2f, %.2f, %.2f), "
-                "attack=%d, paused=%d, wait=%d\n",
-                footPosition.x,
-                footPosition.y,
-                footPosition.z,
-                static_cast<int>(player->IsAttacking()),
-                static_cast<int>(movement->IsMovementPaused()),
-                static_cast<int>(_waitUntilOutside)
-            );
-
-            OutputDebugStringA(buffer);
-
-            for (size_t i = 0; i < _links.size(); ++i)
-            {
-                const auto& link = _links[i];
-
-                Vec3 difference =
-                    footPosition - link.triggerPosition;
-
-                const float heightDifference =
-                    std::fabs(difference.y);
-
-                difference.y = 0.f;
-
-                sprintf_s(
-                    buffer,
-                    "[Door %zu] trigger=(%.2f, %.2f, %.2f), "
-                    "distanceXZ=%.2f, heightDiff=%.2f, inside=%d\n",
-                    i,
-                    link.triggerPosition.x,
-                    link.triggerPosition.y,
-                    link.triggerPosition.z,
-                    difference.Length(),
-                    heightDifference,
-                    static_cast<int>(IsInside(
-                        footPosition,
-                        link,
-                        _triggerRadius))
-                );
-
-                OutputDebugStringA(buffer);
-            }
-        }
-
-
-
-        // 이동 직후에는 감지 영역 밖으로 나가야 다시 사용
+        // 1. 문 사용 또는 잠금 확인 후에는
+        // 감지 영역 밖으로 나가야 다시 시도 가능
         if (_waitUntilOutside)
         {
             bool insideAny = false;
@@ -310,13 +289,14 @@ void DoorTransition::Update()
             return;
         }
 
-        // 공격 동작이 끝나기 전에는 문 이동 시작하지 않음
-        if (player->IsAttacking() ||
+        // 2. 공격 중이거나 이동이 정지된 상태면 사용 불가
+        if (player->IsActionLocked() ||
             movement->IsMovementPaused())
         {
             return;
         }
 
+        // 3. 접근한 문 검사
         for (const auto& link : _links)
         {
             if (!IsInside(
@@ -327,13 +307,28 @@ void DoorTransition::Update()
                 continue;
             }
 
+            // 4. 필요한 열쇠가 없으면 잠긴 소리만 재생
+            if (!link.requiredKey.empty() &&
+                !player->HasKey(link.requiredKey))
+            {
+                SoundManager::Get().PlaySFX(
+                    link.lockedSound
+                );
+
+                // 계속 서 있어도 소리가 반복되지 않도록 설정
+                _waitUntilOutside = true;
+                return;
+            }
+
+            // 5. 사용 가능한 문이면 전환 시작
             _activeLink = link;
 
             player->Stop();
             movement->SetMovementPaused(true);
 
-            // 사운드
-            SoundManager::Get().PlaySFX("DoorOpen");
+            SoundManager::Get().PlaySFX(
+                link.openSound
+            );
 
             _alpha = 0.f;
             CUR_SCENE->SetFadeAlpha(_alpha);

@@ -16,6 +16,10 @@
 #include "Pipe.h"
 #include "WeaponSocket.h"
 #include "SoundManager.h"
+#include "KeyItem.h"
+#include "Enemy.h"
+#include "Scene.h"
+#include "BaseCollider.h"
 
 Player::Player()
 {
@@ -29,6 +33,23 @@ void Player::Init()
 {
 	InitCharacter();
 
+	weak_ptr<Player> weakSelf =
+		static_pointer_cast<Player>(shared_from_this());
+
+	_health->SetOnHit(
+		[weakSelf](
+			const Vec3& attackerPosition,
+			bool hasAttackerPosition)
+		{
+			auto player = weakSelf.lock();
+
+			if (!player)
+				return;
+
+			// 현재 플레이어는 공통 피격 애니메이션 사용
+			player->Hit();
+		}
+	);
 
 	//////////////////////////// ResourceData ////////////////////////////
 	
@@ -82,7 +103,7 @@ void Player::Init()
 	_animMap[PlayerState::Move] = animator->MakeAnimData("Move", model->FindAnimation(L"HarryMason/HarryMason_Move"));
 	_animMap[PlayerState::BackMove] = animator->MakeAnimData("BackMove", model->FindAnimation(L"HarryMason/HarryMason_BackMove"));
 	_animMap[PlayerState::Run] = animator->MakeAnimData("Run", model->FindAnimation(L"HarryMason/HarryMason_Move2"));
-	_animMap[PlayerState::Attack] = animator->MakeAnimData("Attack", model->FindAnimation(L"HarryMason/HarryMason_Attack1"), false);
+	_animMap[PlayerState::KickAttack] = animator->MakeAnimData("KickAttack", model->FindAnimation(L"HarryMason/HarryMason_Attack1"), false);
 	_animMap[PlayerState::PipeAttack] = animator->MakeAnimData("PipeAttack", model->FindAnimation(L"HarryMason/HarryMason_PipeAttack1"), false);
 	_animMap[PlayerState::Hit] = animator->MakeAnimData("Hit", model->FindAnimation(L"HarryMason/HarryMason_Hit"), false);
 
@@ -128,39 +149,98 @@ void Player::Update()
 
 	UpdateFootsteps();
 
-	if (_state != PlayerState::PipeAttack)
+	// 피격 상태 처리
+	if (_state == PlayerState::Hit)
+	{
+		if (auto movement = GetCharacterMovement())
+			movement->ClearMovementInput();
+
+		if (!_modelObject)
+			return;
+
+		auto animator = _modelObject->GetModelAnimator();
+
+		if (!animator)
+			return;
+
+		float hitProgress = 0.f;
+
+		// Hit 애니메이션의 진행률까지 확인한 뒤 종료
+		if (animator->GetAnimationProgress("Hit", hitProgress))
+		{
+			if (hitProgress >= 0.99f &&
+				animator->IsAnimationFinished())
+			{
+				ChangeState(PlayerState::Idle);
+			}
+		}
+
+		return;
+	}
+
+	if (!IsAttacking())
 		return;
 
-	if (_modelObject == nullptr)
+	if (!_modelObject)
 		return;
 
 	auto animator = _modelObject->GetModelAnimator();
-	if (animator == nullptr)
+
+	if (!animator)
 		return;
+
+	const PlayerState attackState = _state;
+
+	auto it = _animMap.find(attackState);
+
+	if (it == _animMap.end())
+		return;
+
+	const bool isKick =
+		attackState == PlayerState::KickAttack;
+
+	const float hitStart =
+		isKick ? _kickHitStart : _attackHitStart;
+
+	const float hitEnd =
+		isKick ? _kickHitEnd : _attackHitEnd;
 
 	float progress = 0.f;
 
-	if (animator->GetAnimationProgress("PipeAttack", progress))
+	if (animator->GetAnimationProgress(it->second, progress))
 	{
-		// 이전~현재 진행 구간이 타격 구간과 겹치는지 검사
-		// 한 프레임에 타격 구간을 넘어가도 한 번은 검사
-		bool crossedHitWindow =
+		const bool crossedHitWindow =
 			progress >= _previousAttackProgress &&
-			progress >= _attackHitStart &&
-			_previousAttackProgress <= _attackHitEnd;
+			progress >= hitStart &&
+			_previousAttackProgress <= hitEnd;
 
-		if (crossedHitWindow && _weapon)
-		{
-			_weapon->Attack();
-		}
-
+		// 데미지 콜백 실행 전에 진행률 저장
 		_previousAttackProgress = progress;
+
+		if (crossedHitWindow)
+		{
+			if (isKick)
+			{
+				ApplyKickDamage();
+			}
+			else if (_weapon)
+			{
+				_weapon->Attack();
+			}
+		}
 	}
+
+	// 데미지 처리 과정에서 상태가 변경되었다면 덮어쓰지 않음
+	if (_state != attackState)
+		return;
 
 	if (animator->IsAnimationFinished())
 	{
 		if (_weapon)
 			_weapon->EndAttack();
+
+		_kickTarget.reset();
+		_kickHitDone = false;
 
 		ChangeState(PlayerState::Idle);
 	}
@@ -190,7 +270,7 @@ void Player::ChangeState(PlayerState state)
 
 void Player::Move()
 {
-	if (_state == PlayerState::PipeAttack)
+	if (IsActionLocked())
 		return;
 
 	ChangeState(PlayerState::Move);
@@ -198,7 +278,7 @@ void Player::Move()
 
 void Player::BackMove()
 {
-	if (_state == PlayerState::PipeAttack)
+	if (IsActionLocked())
 		return;
 
 	ChangeState(PlayerState::BackMove);
@@ -206,7 +286,7 @@ void Player::BackMove()
 
 void Player::Run()
 {
-	if (IsAttacking())
+	if (IsActionLocked())
 		return;
 
 	ChangeState(PlayerState::Run);
@@ -214,7 +294,7 @@ void Player::Run()
 
 void Player::Turn(float direction)
 {
-	if (_state == PlayerState::PipeAttack)
+	if (IsActionLocked())
 		return;
 
 	if (direction == 0.f)
@@ -232,7 +312,7 @@ void Player::Turn(float direction)
 
 void Player::Stop()
 {
-	if (_state == PlayerState::PipeAttack)
+	if (IsActionLocked())
 		return;
 
 	ChangeState(PlayerState::Idle);
@@ -240,20 +320,179 @@ void Player::Stop()
 
 void Player::Attack()
 {
-	if (_state == PlayerState::PipeAttack)
+	if (IsActionLocked())
 		return;
 
-	if (_weapon == nullptr)
+	auto movement = GetCharacterMovement();
+	auto health = GetHealthComponent();
+
+	if (!movement || movement->IsMovementPaused())
 		return;
 
+	if (!health || health->IsDead())
+		return;
+
+	if (!_modelObject || !_modelObject->GetModelAnimator())
+		return;
+
+	auto target = FindKickTarget();
+
+	if (target)
+	{
+		auto it = _animMap.find(PlayerState::KickAttack);
+
+		if (it != _animMap.end() && !it->second.empty())
+		{
+			_kickTarget = target;
+			_kickHitDone = false;
+			_previousAttackProgress = 0.f;
+
+			movement->ClearMovementInput();
+
+			// 파이프 판정이 남지 않도록 종료
+			if (_weapon)
+				_weapon->EndAttack();
+
+			ChangeState(PlayerState::KickAttack);
+			return;
+		}
+	}
+
+	// 기존 파이프 공격
+	if (!_weapon)
+		return;
+
+	_kickTarget.reset();
+	_kickHitDone = false;
 	_previousAttackProgress = 0.f;
 
-	_weapon->BeginAttack();
+	movement->ClearMovementInput();
 
+	_weapon->BeginAttack();
 	ChangeState(PlayerState::PipeAttack);
 
-	// 공격 시작 시 한 번 재생
 	SoundManager::Get().PlaySFX("PipeSwing");
+}
+
+void Player::TryPickupKey()
+{
+	auto movement = GetCharacterMovement();
+	auto health = GetHealthComponent();
+
+	if (!movement || !health || health->IsDead())
+		return;
+
+	if (IsActionLocked() || movement->IsMovementPaused())
+		return;
+
+	shared_ptr<KeyItem> nearestItem;
+	float nearestDistanceSquared = FLT_MAX;
+
+	const Vec3 footPosition =
+		movement->GetFootPosition();
+
+	// 여기에서는 후보만 찾음
+	for (const auto& object : CUR_SCENE->GetObjects())
+	{
+		auto item = dynamic_pointer_cast<KeyItem>(object);
+
+		if (!item || !item->CanPickup(*this))
+			continue;
+
+		Vec3 difference =
+			item->GetTransform()->GetPosition() -
+			footPosition;
+
+		const float distanceSquared =
+			difference.LengthSquared();
+
+		if (distanceSquared < nearestDistanceSquared)
+		{
+			nearestDistanceSquared = distanceSquared;
+			nearestItem = item;
+		}
+	}
+
+	// 씬 순회가 끝난 뒤 획득 및 제거
+	if (nearestItem)
+	{
+		nearestItem->TryPickup(*this);
+	}
+}
+
+void Player::Hit()
+{
+	auto health = GetHealthComponent();
+
+	if (!health || health->IsDead())
+		return;
+
+	if (_state == PlayerState::Dead)
+		return;
+
+	if (!_modelObject)
+		return;
+
+	auto animator = _modelObject->GetModelAnimator();
+
+	if (!animator)
+		return;
+
+	auto it = _animMap.find(PlayerState::Hit);
+
+	if (it == _animMap.end() || it->second.empty())
+		return;
+
+	// 진행 중인 공격 중단
+	if (_weapon)
+		_weapon->EndAttack();
+
+	_kickTarget.reset();
+	_kickHitDone = false;
+	_previousAttackProgress = 0.f;
+
+	if (auto movement = GetCharacterMovement())
+		movement->ClearMovementInput();
+
+	// 이미 피격 중이라면 현재 피격 동작 유지
+	if (_state == PlayerState::Hit)
+		return;
+
+	ChangeState(PlayerState::Hit);
+
+	SoundManager::Get().PlaySFX("PlayerHit");
+
+	// 기본 생성 위치: 플레이어 루트
+	Vec3 bloodPosition = GetTransform()->GetPosition();
+
+	// 실제 몸 콜라이더 중심에 맞춰 생성
+	auto sphere = dynamic_pointer_cast<SphereCollider>(
+		GetCollider()
+	);
+
+	if (sphere)
+	{
+		const auto& center = sphere->GetBoundingSphere().Center;
+
+		bloodPosition = Vec3(
+			center.x,
+			center.y,
+			center.z
+		);
+	}
+
+	// 우선 플레이어 뒤쪽으로 피가 튀도록 설정
+	Vec3 bloodDirection = -GetTransform()->GetForward();
+	bloodDirection.y = 0.f;
+
+	if (bloodDirection.LengthSquared() > 0.000001f)
+		bloodDirection.Normalize();
+	else
+		bloodDirection = Vec3(0.f, 1.f, 1.f);
+
+	CUR_SCENE->SpawnBlood(
+		bloodPosition,
+		bloodDirection);
 }
 
 void Player::EquipWeapon(shared_ptr<Weapon> weapon)
@@ -411,5 +650,155 @@ void Player::PlayFootstep(bool running)
 		soundName,
 		running ? 0.85f : 0.55f
 	);
+}
+
+shared_ptr<Enemy> Player::FindKickTarget()
+{
+	shared_ptr<Enemy> nearestEnemy;
+	float nearestDistanceSquared = FLT_MAX;
+
+	auto movement = GetCharacterMovement();
+
+	if (!movement)
+		return nullptr;
+
+	const Vec3 playerFoot = movement->GetFootPosition();
+
+	for (const auto& object : CUR_SCENE->GetObjects())
+	{
+		auto enemy = dynamic_pointer_cast<Enemy>(object);
+
+		if (!CanKickTarget(enemy))
+			continue;
+
+		Vec3 difference =
+			enemy->GetCharacterMovement()->GetFootPosition()
+			- playerFoot;
+
+		difference.y = 0.f;
+
+		const float distanceSquared = difference.LengthSquared();
+
+		if (distanceSquared < nearestDistanceSquared)
+		{
+			nearestDistanceSquared = distanceSquared;
+			nearestEnemy = enemy;
+		}
+	}
+
+	return nearestEnemy;
+}
+
+bool Player::CanKickTarget(const shared_ptr<Enemy>& enemy)
+{
+	if (!enemy || !enemy->CanBeKicked())
+		return false;
+
+	auto health = enemy->GetHealthComponent();
+
+	if (!health || health->IsDead())
+		return false;
+
+	auto movement = GetCharacterMovement();
+	auto enemyMovement = enemy->GetCharacterMovement();
+
+	if (!movement || !enemyMovement)
+		return false;
+
+	// 루트 중심 높이가 서로 달라도 판단할 수 있도록 발 위치 사용
+	const Vec3 playerFoot = movement->GetFootPosition();
+	const Vec3 enemyFoot = enemyMovement->GetFootPosition();
+
+	Vec3 direction = enemyFoot - playerFoot;
+
+	if (std::fabs(direction.y) > _kickHeightTolerance)
+		return false;
+
+	direction.y = 0.f;
+
+	const float distanceSquared = direction.LengthSquared();
+
+	if (distanceSquared > _kickRange * _kickRange)
+		return false;
+
+	if (distanceSquared > 0.000001f)
+	{
+		direction.Normalize();
+
+		Vec3 forward = GetTransform()->GetForward();
+		forward.y = 0.f;
+
+		if (forward.LengthSquared() < 0.000001f)
+			return false;
+
+		forward.Normalize();
+
+		const float minDot =
+			std::cos(XMConvertToRadians(_kickHalfAngle));
+
+		if (forward.Dot(direction) < minDot)
+			return false;
+	}
+
+	// 발보다 조금 위에서 벽 검사
+	const Vec3 rayStart = playerFoot + Vec3(0.f, 0.35f, 0.f);
+	const Vec3 rayEnd = enemyFoot + Vec3(0.f, 0.35f, 0.f);
+
+	Vec3 rayDirection = rayEnd - rayStart;
+	const float rayLength = rayDirection.Length();
+
+	if (rayLength < 0.0001f)
+		return true;
+
+	rayDirection /= rayLength;
+
+	Ray ray;
+	ray.position = rayStart;
+	ray.direction = rayDirection;
+
+	shared_ptr<BaseCollider> hitCollider;
+	float hitDistance = 0.f;
+
+	// 플레이어와 발차기 대상은 제외하고 장애물만 검사
+	bool blocked = CUR_SCENE->RayCastFiltered(
+		ray,
+		rayLength,
+		[this, enemy](const shared_ptr<GameObject>& object)
+		{
+			return object.get() == this ||
+				object == enemy;
+		},
+		hitCollider,
+		hitDistance
+	);
+
+	return !blocked;
+}
+
+void Player::ApplyKickDamage()
+{
+	if (_kickHitDone)
+		return;
+
+	auto enemy = _kickTarget.lock();
+
+	// 공격 시작 이후 적이 일어나거나 멀어졌다면 명중하지 않음
+	if (!CanKickTarget(enemy))
+		return;
+
+	auto health = enemy->GetHealthComponent();
+
+	if (!health || health->IsDead())
+		return;
+
+	// TakeDamage의 피격 콜백 실행 전에 기록
+	_kickHitDone = true;
+
+	health->TakeDamage(
+		_kickDamage,
+		GetTransform()->GetPosition()
+	);
+
+	SoundManager::Get().PlaySFX("PipeHit");
 }
 

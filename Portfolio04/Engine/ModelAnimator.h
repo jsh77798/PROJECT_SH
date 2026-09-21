@@ -74,6 +74,7 @@ private:
 	unordered_map<string, AnimData> _animDataMap;
 	bool _loop = true;
 	bool _isAnimationFinished = false;
+	bool _nextLoop = true;
 
 private:
 	TweenDesc _tweenDesc;

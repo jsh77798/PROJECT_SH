@@ -548,64 +548,211 @@ std::shared_ptr<asAnimation> Converter::ReadAnimationData(aiAnimation* srcAnimat
 
 std::shared_ptr<asAnimationNode> Converter::ParseAnimationNode(shared_ptr<asAnimation> animation, aiNodeAnim* srcNode)
 {
-	std::shared_ptr<asAnimationNode> node = make_shared<asAnimationNode>();
+	//std::shared_ptr<asAnimationNode> node = make_shared<asAnimationNode>();
+	//node->name = srcNode->mNodeName;
+	//
+	//uint32 keyCount = max(max(srcNode->mNumPositionKeys, srcNode->mNumScalingKeys), srcNode->mNumRotationKeys);
+	//
+	//for (uint32 k = 0; k < keyCount; k++)
+	//{
+	//	asKeyframeData frameData;
+	//
+	//	bool found = false;
+	//	uint32 t = node->keyframe.size();
+	//
+	//	// Position
+	//	if (::fabsf((float)srcNode->mPositionKeys[k].mTime - (float)t) <= 0.0001f)
+	//	{
+	//		aiVectorKey key = srcNode->mPositionKeys[k];
+	//		frameData.time = (float)key.mTime;
+	//		::memcpy_s(&frameData.translation, sizeof(Vec3), &key.mValue, sizeof(aiVector3D));
+	//
+	//		found = true;
+	//	}
+	//
+	//	// Rotation
+	//	if (::fabsf((float)srcNode->mRotationKeys[k].mTime - (float)t) <= 0.0001f)
+	//	{
+	//		aiQuatKey key = srcNode->mRotationKeys[k];
+	//		frameData.time = (float)key.mTime;
+	//
+	//		frameData.rotation.x = key.mValue.x;
+	//		frameData.rotation.y = key.mValue.y;
+	//		frameData.rotation.z = key.mValue.z;
+	//		frameData.rotation.w = key.mValue.w;
+	//
+	//		found = true;
+	//	}
+	//
+	//	// Scale
+	//	if (::fabsf((float)srcNode->mScalingKeys[k].mTime - (float)t) <= 0.0001f)
+	//	{
+	//		aiVectorKey key = srcNode->mScalingKeys[k];
+	//		frameData.time = (float)key.mTime;
+	//		::memcpy_s(&frameData.scale, sizeof(Vec3), &key.mValue, sizeof(aiVector3D));
+	//
+	//		found = true;
+	//	}
+	//
+	//	if (found == true)
+	//		node->keyframe.push_back(frameData);
+	//}
+	//
+	//// Keyframe 늘려주기
+	//if (node->keyframe.size() < animation->frameCount)
+	//{
+	//	uint32 count = animation->frameCount - node->keyframe.size();
+	//	asKeyframeData keyFrame = node->keyframe.back();
+	//
+	//	for (uint32 n = 0; n < count; n++)
+	//		node->keyframe.push_back(keyFrame);
+	//}
+	//
+	//return node;
+
+
+
+	auto node = make_shared<asAnimationNode>();
 	node->name = srcNode->mNodeName;
 
-	uint32 keyCount = max(max(srcNode->mNumPositionKeys, srcNode->mNumScalingKeys), srcNode->mNumRotationKeys);
+	// 키가 없는 항목은 원래 노드의 로컬 변환 사용
+	Vec3 defaultScale(1.f, 1.f, 1.f);
+	Quaternion defaultRotation(0.f, 0.f, 0.f, 1.f);
+	Vec3 defaultPosition = Vec3::Zero;
 
-	for (uint32 k = 0; k < keyCount; k++)
+	auto sourceNode =
+		_scene->mRootNode->FindNode(srcNode->mNodeName);
+
+	if (sourceNode)
 	{
-		asKeyframeData frameData;
+		Matrix local(sourceNode->mTransformation[0]);
+		local = local.Transpose();
 
-		bool found = false;
-		uint32 t = node->keyframe.size();
-
-		// Position
-		if (::fabsf((float)srcNode->mPositionKeys[k].mTime - (float)t) <= 0.0001f)
-		{
-			aiVectorKey key = srcNode->mPositionKeys[k];
-			frameData.time = (float)key.mTime;
-			::memcpy_s(&frameData.translation, sizeof(Vec3), &key.mValue, sizeof(aiVector3D));
-
-			found = true;
-		}
-
-		// Rotation
-		if (::fabsf((float)srcNode->mRotationKeys[k].mTime - (float)t) <= 0.0001f)
-		{
-			aiQuatKey key = srcNode->mRotationKeys[k];
-			frameData.time = (float)key.mTime;
-
-			frameData.rotation.x = key.mValue.x;
-			frameData.rotation.y = key.mValue.y;
-			frameData.rotation.z = key.mValue.z;
-			frameData.rotation.w = key.mValue.w;
-
-			found = true;
-		}
-
-		// Scale
-		if (::fabsf((float)srcNode->mScalingKeys[k].mTime - (float)t) <= 0.0001f)
-		{
-			aiVectorKey key = srcNode->mScalingKeys[k];
-			frameData.time = (float)key.mTime;
-			::memcpy_s(&frameData.scale, sizeof(Vec3), &key.mValue, sizeof(aiVector3D));
-
-			found = true;
-		}
-
-		if (found == true)
-			node->keyframe.push_back(frameData);
+		local.Decompose(
+			defaultScale,
+			defaultRotation,
+			defaultPosition
+		);
 	}
 
-	// Keyframe 늘려주기
-	if (node->keyframe.size() < animation->frameCount)
-	{
-		uint32 count = animation->frameCount - node->keyframe.size();
-		asKeyframeData keyFrame = node->keyframe.back();
+	// 각 키 배열에서 주어진 시간에 해당하는 값을 구함
+	auto sample = [](
+		const auto* keys,
+		uint32 count,
+		double time,
+		const auto& fallback,
+		auto readValue,
+		auto interpolate)
+		{
+			if (!keys || count == 0)
+				return fallback;
 
-		for (uint32 n = 0; n < count; n++)
-			node->keyframe.push_back(keyFrame);
+			if (count == 1 || time <= keys[0].mTime)
+				return readValue(keys[0]);
+
+			if (time >= keys[count - 1].mTime)
+				return readValue(keys[count - 1]);
+
+			for (uint32 i = 0; i + 1 < count; ++i)
+			{
+				if (time > keys[i + 1].mTime)
+					continue;
+
+				const double start = keys[i].mTime;
+				const double end = keys[i + 1].mTime;
+				const double interval = end - start;
+
+				const float ratio = interval > 0.0
+					? static_cast<float>((time - start) / interval)
+					: 0.f;
+
+				return interpolate(
+					readValue(keys[i]),
+					readValue(keys[i + 1]),
+					ratio
+				);
+			}
+
+			return readValue(keys[count - 1]);
+		};
+
+	auto readVector = [](const aiVectorKey& key) -> Vec3
+		{
+			return Vec3(
+				key.mValue.x,
+				key.mValue.y,
+				key.mValue.z
+			);
+		};
+
+	auto readRotation = [](const aiQuatKey& key) -> Quaternion
+		{
+			Quaternion rotation(
+				key.mValue.x,
+				key.mValue.y,
+				key.mValue.z,
+				key.mValue.w
+			);
+
+			rotation.Normalize();
+			return rotation;
+		};
+
+	auto blendVector = [](
+		const Vec3& a,
+		const Vec3& b,
+		float ratio) -> Vec3
+		{
+			return a + (b - a) * ratio;
+		};
+
+	auto blendRotation = [](
+		const Quaternion& a,
+		const Quaternion& b,
+		float ratio) -> Quaternion
+		{
+			Quaternion result = Quaternion::Slerp(a, b, ratio);
+			result.Normalize();
+			return result;
+		};
+
+	node->keyframe.reserve(animation->frameCount);
+
+	for (uint32 i = 0; i < animation->frameCount; ++i)
+	{
+		const double time = static_cast<double>(i);
+
+		asKeyframeData frameData{};
+		frameData.time = static_cast<float>(time);
+
+		frameData.translation = sample(
+			srcNode->mPositionKeys,
+			srcNode->mNumPositionKeys,
+			time,
+			defaultPosition,
+			readVector,
+			blendVector
+		);
+
+		frameData.rotation = sample(
+			srcNode->mRotationKeys,
+			srcNode->mNumRotationKeys,
+			time,
+			defaultRotation,
+			readRotation,
+			blendRotation
+		);
+
+		frameData.scale = sample(
+			srcNode->mScalingKeys,
+			srcNode->mNumScalingKeys,
+			time,
+			defaultScale,
+			readVector,
+			blendVector
+		);
+
+		node->keyframe.push_back(frameData);
 	}
 
 	return node;

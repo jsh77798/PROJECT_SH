@@ -14,5 +14,10 @@ public:
     virtual void Init() override;
     virtual void Update() override;
 
+private:
+    void DropKey();
+
+private:
+    bool _keyDropped = false;
 };
 

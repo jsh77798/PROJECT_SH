@@ -20,7 +20,8 @@ void PlayerController::Update()
         return;
 
     // 문 전환 중 이동·회전·공격 입력 차단
-    if (movement->IsMovementPaused())
+    if (movement->IsMovementPaused() ||
+        _player->IsActionLocked())
     {
         movement->ClearMovementInput();
         return;
@@ -31,10 +32,21 @@ void PlayerController::Update()
         _player->Attack();
     }
 
+    if (_player->IsActionLocked())
+    {
+        movement->ClearMovementInput();
+        return;
+    }
+
     if (_player->IsAttacking())
     {
         movement->ClearMovementInput();
         return;
+    }
+
+    if (INPUT->GetButtonDown(KEY_TYPE::E))
+    {
+        _player->TryPickupKey();
     }
 
     float moveInput = 0.f;

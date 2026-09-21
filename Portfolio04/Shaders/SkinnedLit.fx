@@ -103,6 +103,7 @@ matrix GetAnimationMatrix(VS_IN input)
         next = matrix(n0, n1, n2, n3);
 
         matrix result = lerp(curr, next, ratio[0]);
+        
 
 		// 다음 애니메이션
         if (animIndex[1] >= 0)

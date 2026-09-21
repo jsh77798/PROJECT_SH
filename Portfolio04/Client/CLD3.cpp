@@ -11,6 +11,8 @@
 #include "CharacterMovement.h"
 #include "EnemyController.h"
 #include "HealthComponent.h"
+#include "KeyItem.h"
+#include "Scene.h"
 
 CLD3::CLD3()
 {
@@ -96,5 +98,51 @@ void CLD3::Init()
 
 void CLD3::Update()
 {
+	auto health = GetHealthComponent();
+
+	if (!_keyDropped && health && health->IsDead())
+	{
+		DropKey();
+	}
+
 	Enemy::Update();
+}
+
+void CLD3::DropKey()
+{
+	if (_keyDropped)
+		return;
+
+	auto movement = GetCharacterMovement();
+
+	if (!movement)
+		return;
+
+	// 키의 생성 위치는 몬스터의 발 위치
+	const Vec3 dropPosition =
+		movement->GetFootPosition();
+
+	auto key = make_shared<KeyItem>();
+
+	// 두 번째 인자는 기존 Door06 키에 사용하던
+	// 실제 FBX 경로로 맞춰주세요.
+	key->Init(
+		"Key_Door06",
+		L"KeyDoor03/Silent Hill 1 Meshes - House Key.fbx"
+	);
+
+	key->SetVisualHeight(1.f);
+
+	key->GetOrAddTransform()->SetPosition(
+		dropPosition
+	);
+
+	// 씬에 등록하기 전에 중복 드랍 방지
+	_keyDropped = true;
+
+	CUR_SCENE->Add(key);
+
+	OutputDebugStringA(
+		"[CLD3] Dropped Key_Door06\n"
+	);
 }

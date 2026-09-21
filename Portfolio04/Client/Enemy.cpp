@@ -9,6 +9,7 @@
 #include "AABBBoxCollider.h"
 #include "OBBBoxCollider.h"
 #include "HealthComponent.h"
+#include "CharacterMovement.h"
 
 Enemy::Enemy()
 {
@@ -57,6 +58,10 @@ void Enemy::Init()
                 enemy->Death();
         }
     );
+
+    _hitForwardOffset = 1.0f;
+    _hitHeightOffset = 1.2f;
+    _hitRadius = 0.8f;
 }
 
 void Enemy::SetTarget(shared_ptr<Character> target)
@@ -578,12 +583,31 @@ void Enemy::CheckAttackHit()
 
     collider->Update();
 
-    Vec3 center =
-        GetTransform()->GetPosition();
+    //Vec3 center =
+    //    GetTransform()->GetPosition();
+    //
+    //center += GetTransform()->GetForward()
+    //    * _hitForwardOffset;
+    //
+    //center.y += _hitHeightOffset;
 
-    center += GetTransform()->GetForward()
-        * _hitForwardOffset;
+    auto movement = GetCharacterMovement();
 
+    if (!movement)
+        return;
+
+    Vec3 forward = GetTransform()->GetForward();
+    forward.y = 0.f;
+
+    if (forward.LengthSquared() < 0.000001f)
+        return;
+
+    forward.Normalize();
+
+    // 발 위치 + 정면 거리 + 공격 높이
+    Vec3 center = movement->GetFootPosition();
+
+    center += forward * _hitForwardOffset;
     center.y += _hitHeightOffset;
 
     BoundingSphere hitSphere;

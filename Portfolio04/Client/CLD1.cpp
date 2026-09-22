@@ -47,8 +47,16 @@ void CLD1::Init()
 	//////////////////////////////////////////////////////////////////////
 
 
+	_attackCooldown = 0.75f;
+
 	_isLying = true;
 	_hasAwakened = false;
+
+	// Sound
+	_attackSound = "CLDAttack";
+	_deathSound = "CLDDead";
+	_tensionEnterRange = 10.f;
+	_tensionLeaveRange = 12.f;
 
 	// Movement
 	_movement->SetFootOffset(0.f);
@@ -64,7 +72,7 @@ void CLD1::Init()
 	collider->SetCenterOffset(Vec3(0.f, 0.5f, 0.f));
 
 	// Health
-	_health->SetMaxHealth(1000.f);
+	_health->SetMaxHealth(1250.f);
 
 	// ModelObject
 	_modelObject = make_shared<GameObject>();

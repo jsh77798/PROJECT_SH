@@ -49,8 +49,14 @@ void CLD3::Init()
 	//////////////////////////////////////////////////////////////////////
 
 
+	_attackCooldown = 0.7f;
+
 	_isLying = true;
 	_hasAwakened = false;
+
+	// Sound
+	_attackSound = "CLD3Attack";
+	_deathSound = "CLD3Dead";
 
 	// Movement
 	_movement->SetFootOffset(0.f);
@@ -62,11 +68,11 @@ void CLD3::Init()
 
 	// Collider
 	auto collider = make_shared<SphereCollider>(_debugShader);
-	collider->SetRadius(0.5f);
+	collider->SetRadius(0.7f);
 	collider->SetCenterOffset(Vec3(0.f, 0.5f, 0.f));
 
 	// Health
-	_health->SetMaxHealth(1000.f);
+	_health->SetMaxHealth(1900.f);
 
 	// ModelObject
 	_modelObject = make_shared<GameObject>();

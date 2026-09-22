@@ -135,6 +135,9 @@ void DoorTransition::Init(
             requiredKey
         );
 
+        _links.back().triggerName =
+            prefix + L"_OUT_TRIGGER";
+
         // IN -> OUT
         AddLink(
             inTrigger->second,
@@ -144,6 +147,9 @@ void DoorTransition::Init(
             openSound,
             requiredKey
         );
+
+        _links.back().triggerName =
+            prefix + L"_IN_TRIGGER";
     }
 
     if (_links.empty())
@@ -367,13 +373,21 @@ void DoorTransition::Update()
             if (_resetCamera)
                 _resetCamera();
 
-            // 실내이면 눈 끄기, 실외이면 켜기
             CUR_SCENE->SetSnowEnabled(
                 !_activeLink.destinationIndoor
             );
 
-            if (!_activeLink.bgmPath.empty())
+            // 음악 선택은 콜백을 등록한 TownScene에서 담당
+            if (_onTransitionCompleted)
             {
+                _onTransitionCompleted(
+                    _activeLink.triggerName,
+                    _activeLink.bgmPath
+                );
+            }
+            else if (!_activeLink.bgmPath.empty())
+            {
+                // 콜백이 없는 경우 기존 동작 유지
                 SoundManager::Get().PlayBGM(
                     _activeLink.bgmPath
                 );

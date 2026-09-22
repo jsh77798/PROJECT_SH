@@ -22,8 +22,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	desc.hInstance = hInstance;
 	desc.vsync = false;
 	desc.hWnd = NULL;
-	desc.width = 1000;
-	desc.height = 800;
+	//desc.width = 1920;
+	//desc.height = 1080;
+	desc.width = GetSystemMetrics(SM_CXSCREEN);
+	desc.height = GetSystemMetrics(SM_CYSCREEN);
 	desc.clearColor = Color(0.f, 0.f, 0.f, 0.f);
 	desc.app = make_shared<AppManager>();
 	

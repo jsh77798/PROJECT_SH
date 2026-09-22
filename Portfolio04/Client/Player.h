@@ -89,6 +89,41 @@ private:
     bool CanKickTarget(const shared_ptr<Enemy>& enemy);
     void ApplyKickDamage();
 
+    struct PipeComboData
+    {
+        string animation;
+
+        float hitStart;
+        float hitEnd;
+        float soundProgress;
+    };
+
+    // 진행률 = (이벤트 프레임 - 1) / (전체 프레임 - 1)
+// 앞서 만든 FBX 3개의 타이밍
+    std::array<PipeComboData, 3> _pipeCombos
+    { {
+        { "", 16.f / 45.f, 22.f / 45.f, 7.f / 45.f },
+        { "", 12.f / 42.f, 20.f / 42.f, 4.f / 42.f },
+        { "", 22.f / 57.f, 29.f / 57.f, 14.f / 57.f }
+    } };
+
+    int _comboIndex = -1;
+
+    // 현재 공격이 끝나면 다음 공격을 실행할지
+    bool _comboQueued = false;
+
+    // 현재 공격에서 휘두르는 소리를 재생했는지
+    bool _attackSoundPlayed = false;
+
+    // 애니메이션 진행률 15~90% 구간에서 추가 입력 허용
+    float _comboInputStart = 0.15f;
+    float _comboInputEnd = 0.90f;
+
+    bool BeginPipeCombo(int index);
+    void QueueNextCombo();
+    void UpdateAttack();
+    void ResetAttack();
+
 private:
     shared_ptr<GameObject> _modelObject;
     shared_ptr<GameObject> _camera;
@@ -100,8 +135,10 @@ private:
     shared_ptr<GameObject> _weaponSocket;
     float _previousAttackProgress = 0.f;
     // 실제 휘두르는 구간에 맞춰 조절
-    float _attackHitStart = 15.f / 48.f;
+    float _attackHitStart = 10.f / 48.f;
     float _attackHitEnd = 23.f / 48.f;
+
+    float _pipeAttackSpeed = 1.5f;
 
 private:
     weak_ptr<Enemy> _kickTarget;

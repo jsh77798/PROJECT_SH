@@ -40,6 +40,13 @@ void Dog::Init()
 	model->ReadAnimation(ASSIMP->AnimImporter(L"Dog/Dog_Death.fbx"));
 	//////////////////////////////////////////////////////////////////////
 
+	_attackCooldown = 0.75f;
+
+	// Sound
+	_attackSound = "DogAttack";
+	_deathSound = "DogDead";
+	_tensionEnterRange = 15.f;
+	_tensionLeaveRange = 17.f;
 
 	// Movement
 	_movement->SetFootOffset(0.f);
@@ -55,7 +62,7 @@ void Dog::Init()
 	collider->SetCenterOffset(Vec3(0.f, 0.5f, 0.f));
 
 	// Health
-	_health->SetMaxHealth(1000.f);
+	_health->SetMaxHealth(900.f);
 
 	// ModelObject
 	_modelObject = make_shared<GameObject>();

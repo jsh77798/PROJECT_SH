@@ -20,6 +20,6 @@ public:
     }
 
 private:
-    float _hitRadius = 0.3f; // 월드 단위, 실제 파이프 크기에 맞춰 조절
+    float _hitRadius = 1.4f; // 월드 단위, 실제 파이프 크기에 맞춰 조절
 };
 

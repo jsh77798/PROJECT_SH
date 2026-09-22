@@ -33,7 +33,7 @@ public:
 
     bool LoadTensionBGM(const std::string& path);
 
-    void SetTensionActive(bool active);
+    void SetTensionActive(bool active, bool immediate = false);
     void SetTensionVolume(float volume);
 
     void StopTensionBGM();

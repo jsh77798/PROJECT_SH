@@ -43,7 +43,7 @@ public:
     }
 
 protected:
-    float _damage = 90.f;
+    float _damage = 200.f;
     bool _attackActive = false;
     weak_ptr<GameObject> _owner;
     std::unordered_set<shared_ptr<GameObject>> _hitObjects;  // 공격 한 번 동안 이미 맞은 대상 보관

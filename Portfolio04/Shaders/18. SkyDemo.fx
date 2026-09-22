@@ -1,46 +1,9 @@
-//#include "00. Global.fx"
-//#include "00. Light.fx"
-//
-//struct VS_OUT
-//{
-//	float4 position : SV_POSITION;
-//	float2 uv : TEXCOORD;
-//};
-//
-//VS_OUT VS(VertexTextureNormalTangent input)
-//{
-//	VS_OUT output;
-//
-//	// Local -> World -> View -> Projection
-//	float4 viewPos = mul(float4(input.position.xyz, 0), V);
-//	float4 clipSpacePos = mul(viewPos, P);
-//	output.position = clipSpacePos.xyzw;
-//	output.position.z = output.position.w * 0.999999f;
-//
-//	output.uv = input.uv;
-//
-//	return output;
-//}
-//
-//
-//float4 PS(VS_OUT input) : SV_TARGET
-//{
-//	float4 color = DiffuseMap.Sample(LinearSampler, input.uv);
-//	return color;
-//}
-//
-//technique11 T0
-//{
-//	pass P0
-//	{
-//		SetRasterizerState(FrontCounterClockwiseTrue);
-//		SetVertexShader(CompileShader(vs_5_0, VS()));
-//		SetPixelShader(CompileShader(ps_5_0, PS()));
-//	}
-//};
-
 #include "00. Global.fx"
 #include "00. Light.fx"
+
+float4 SkyColor = float4(0.4f, 0.4f, 0.4f, 1.f);
+
+float UseSkyTexture = 0.f;
 
 struct VS_OUT
 {
@@ -69,11 +32,16 @@ VS_OUT VS(VertexTextureNormalTangent input)
 
 float4 PS(VS_OUT input) : SV_TARGET
 {
-    float3 color =
+    float3 textureColor =
         DiffuseMap.Sample(LinearSampler, input.uv).rgb;
 
-    return float4(0.4f, 0.4f, 0.4f, 1.f);
-    //return float4(color, 1.f);
+    float3 color = lerp(
+        SkyColor.rgb,
+        textureColor,
+        saturate(UseSkyTexture)
+    );
+
+    return float4(color, 1.f);
 }
 
 DepthStencilState SkyDepth

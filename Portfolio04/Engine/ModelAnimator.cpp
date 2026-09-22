@@ -692,22 +692,82 @@ InstanceID ModelAnimator::GetInstanceID()
 	return make_pair((uint64)_model.get(), (uint64)_shader.get());
 }
 
-void ModelAnimator::Play(string animName)
+void ModelAnimator::Play(string animName, float speedMultiplier)
 {
+	//auto iter = _animDataMap.find(animName);
+	//if (iter == _animDataMap.end())
+	//	return;
+	//
+	//const AnimData& animData = iter->second;
+	//TweenDesc& desc = _tweenDesc;
+	//
+	//// 이미 해당 애니메이션으로 전환 중이라면 유지
+	//// 전환 시간을 다시 초기화하지 않음
+	//if (desc.next.animIndex == animData.animIndex)
+	//	return;
+	//
+	//// 현재 애니메이션을 요청했다면 다른 전환 예약을 취소
+	//// 예: Idle → Move 전환 중 다시 Idle 요청
+	//if (desc.curr.animIndex == animData.animIndex)
+	//{
+	//	if (desc.next.animIndex >= 0)
+	//	{
+	//		desc.ClearNextAnim();
+	//
+	//		desc.tweenSumTime = 0.f;
+	//		desc.tweenRatio = 0.f;
+	//	}
+	//
+	//	_loop = animData.animLoop;
+	//	desc.curr.speed = animData.speed;
+	//	return;
+	//}
+	//
+	//// 새로운 애니메이션으로 전환
+	//auto animation =
+	//	_model->GetAnimationByIndex(animData.animIndex);
+	//
+	//if (animation == nullptr || animation->frameCount == 0)
+	//	return;
+	//
+	//desc.next.animIndex = animData.animIndex;
+	//desc.next.currFrame = 0;
+	//desc.next.nextFrame = animation->frameCount > 1 ? 1 : 0;
+	//desc.next.sumTime = 0.f;
+	//desc.next.ratio = 0.f;
+	//desc.next.speed = animData.speed;
+	//
+	//desc.tweenSumTime = 0.f;
+	//desc.tweenRatio = 0.f;
+	//desc.tweenDuration = 0.2f;
+	//
+	////_loop = animData.animLoop;
+	////_isAnimationFinished = false;
+	//_nextLoop = animData.animLoop;
+	//_isAnimationFinished = false;
+
 	auto iter = _animDataMap.find(animName);
+
 	if (iter == _animDataMap.end())
+		return;
+
+	if (speedMultiplier <= 0.f)
 		return;
 
 	const AnimData& animData = iter->second;
 	TweenDesc& desc = _tweenDesc;
 
-	// 이미 해당 애니메이션으로 전환 중이라면 유지
-	// 전환 시간을 다시 초기화하지 않음
-	if (desc.next.animIndex == animData.animIndex)
-		return;
+	const float playSpeed =
+		animData.speed * speedMultiplier;
 
-	// 현재 애니메이션을 요청했다면 다른 전환 예약을 취소
-	// 예: Idle → Move 전환 중 다시 Idle 요청
+	// 이미 전환 중이면 시간은 유지하고 속도만 갱신
+	if (desc.next.animIndex == animData.animIndex)
+	{
+		desc.next.speed = playSpeed;
+		return;
+	}
+
+	// 현재 애니메이션이면 다른 전환 예약 취소
 	if (desc.curr.animIndex == animData.animIndex)
 	{
 		if (desc.next.animIndex >= 0)
@@ -719,11 +779,10 @@ void ModelAnimator::Play(string animName)
 		}
 
 		_loop = animData.animLoop;
-		desc.curr.speed = animData.speed;
+		desc.curr.speed = playSpeed;
 		return;
 	}
 
-	// 새로운 애니메이션으로 전환
 	auto animation =
 		_model->GetAnimationByIndex(animData.animIndex);
 
@@ -732,17 +791,17 @@ void ModelAnimator::Play(string animName)
 
 	desc.next.animIndex = animData.animIndex;
 	desc.next.currFrame = 0;
-	desc.next.nextFrame = animation->frameCount > 1 ? 1 : 0;
+	desc.next.nextFrame =
+		animation->frameCount > 1 ? 1 : 0;
+
 	desc.next.sumTime = 0.f;
 	desc.next.ratio = 0.f;
-	desc.next.speed = animData.speed;
+	desc.next.speed = playSpeed;
 
 	desc.tweenSumTime = 0.f;
 	desc.tweenRatio = 0.f;
 	desc.tweenDuration = 0.2f;
 
-	//_loop = animData.animLoop;
-	//_isAnimationFinished = false;
 	_nextLoop = animData.animLoop;
 	_isAnimationFinished = false;
 }

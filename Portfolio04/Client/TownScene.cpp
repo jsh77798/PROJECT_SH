@@ -82,6 +82,42 @@ void TownScene::Start()
         );
 
 
+        // Dog
+        sound.LoadSFX(
+            "DogAttack",
+            "../Resources/Sounds/SFX/SH-Demon-Dog-Bark.wav"
+        );
+
+        sound.LoadSFX(
+            "DogDead",
+            "../Resources/Sounds/SFX/SH-Demon-Dog-Kicked.wav"
+        );
+
+
+        // CLD1,2
+        sound.LoadSFX(
+            "CLDAttack",
+            "../Resources/Sounds/SFX/SH_Weapons_Knife_Slash.wav"
+        );
+
+        sound.LoadSFX(
+            "CLDDead",
+            "../Resources/Sounds/SFX/SH-Demon-Child-Kicked.wav"
+        );
+
+
+        // CLD3
+        sound.LoadSFX(
+            "CLD3Attack",
+            "../Resources/Sounds/SFX/SH-Demon-Bird-Squak.wav"
+        );
+
+        sound.LoadSFX(
+            "CLD3Dead",
+            "../Resources/Sounds/SFX/SH-Doctor-Moan.wav"
+        );
+
+
         // DoorOpen
         //sound.LoadSFX(
         //    "DoorOpen",
@@ -107,6 +143,7 @@ void TownScene::Start()
             "../Resources/Sounds/SFX/SH-Door-Locked.wav"
         );
 
+        
         // BGM
         sound.PlayBGM(
             "../Resources/Sounds/BGM/SH-Disc1-08-NightmarishEnd.wav"
@@ -126,7 +163,7 @@ void TownScene::Start()
 
 
     _shader = make_shared<Shader>(L"SkinnedLit.fx");
-    shared_ptr<Shader> _mapShader = make_shared<Shader>(L"Map.fx");
+    _mapShader = make_shared<Shader>(L"Map.fx");
     shared_ptr<Shader> _debugShader = make_shared<Shader>(L"Debug.fx");
 
 
@@ -174,17 +211,17 @@ void TownScene::Start()
     // Skybox 생성
     {
         // 앞서 수정한 하늘 셰이더를 이 이름으로 저장
-        auto shader =
+        _skyShader =
             make_shared<Shader>(L"18. SkyDemo.fx");
 
         // 실제 하늘 텍스처 파일이 필요합니다.
         auto texture = RESOURCES->Load<Texture>(
-            L"SkyTexture",
-            L"..\\Resources\\Textures\\sky.png"
+            L"Sky3Texture",
+            L"..\\Resources\\Textures\\sky3.png"
         );
 
         auto skybox = make_shared<Skybox>();
-        skybox->Init(shader, texture);
+        skybox->Init(_skyShader, texture);
 
         CUR_SCENE->SetSkybox(skybox);
     }
@@ -370,6 +407,17 @@ void TownScene::Start()
             // virtual Init이므로 Dog/CLD별 Init 실행
             enemy->Init();
 
+            // ★ CLD3에만 사망 이벤트 연결
+            if (auto cld3 = dynamic_pointer_cast<CLD3>(enemy))
+            {
+                cld3->SetOnDeathEvent(
+                    [this]()
+                    {
+                        OnCLD3Defeated();
+                    }
+                );
+            }
+
             applySpawnPoint(enemy, point);
 
             CUR_SCENE->Add(enemy);
@@ -397,6 +445,18 @@ void TownScene::Start()
                 {
                     player->ResetCameraAfterTeleport();
                 }
+            }
+        );
+
+        doorTransition->SetOnTransitionCompleted(
+            [this](
+                const std::wstring& triggerName,
+                const std::string& defaultBGM)
+            {
+                OnDoorTransitionCompleted(
+                    triggerName,
+                    defaultBGM
+                );
             }
         );
 
@@ -458,6 +518,7 @@ void TownScene::Start()
     }
     CUR_SCENE->Add(floor);
 
+    ApplyEnvironmentColors();
 }
 
 void TownScene::Update()
@@ -478,14 +539,6 @@ void TownScene::Update()
             const Vec3 playerPosition =
                 mPlayer->GetTransform()->GetPosition();
 
-            // 활성화 중에는 더 멀어져야 해제
-            const float range =
-                _tensionActive
-                ? _tensionLeaveRange
-                : _tensionEnterRange;
-
-            const float rangeSquared = range * range;
-
             for (const auto& object :
                 CUR_SCENE->GetObjects())
             {
@@ -505,11 +558,24 @@ void TownScene::Update()
                     continue;
                 }
 
+                // ★ 누워 있거나 죽은 척하는 적은 음악 판정에서 제외
+                if (!enemy->CanTriggerTensionMusic())
+                    continue;
+
+                // ★ 각 적에게 설정된 거리 사용
+                const float range =
+                    _tensionActive
+                    ? enemy->GetTensionLeaveRange()
+                    : enemy->GetTensionEnterRange();
+
+                const float rangeSquared =
+                    range * range;
+
                 const Vec3 difference =
                     enemy->GetTransform()->GetPosition()
                     - playerPosition;
 
-                // 높이 차이도 포함한 3차원 거리
+                // 높이를 포함한 3차원 거리
                 if (difference.LengthSquared() <=
                     rangeSquared)
                 {
@@ -520,15 +586,182 @@ void TownScene::Update()
         }
     }
 
+    if (_cld3MusicActive || _cld3Defeated)
+    {
+        enemyNearby = false;
+    }
+
     _tensionActive = enemyNearby;
 
     sound.SetTensionActive(_tensionActive);
 
-    // 매 프레임 한 번만 호출
+    // 페이드 처리를 위해 계속 호출
     sound.Update(TIME->GetDeltaTime());
 }
 
 void TownScene::Render()
 {
     Scene::Render();
+}
+
+void TownScene::ApplyEnvironmentColors()
+{
+    
+    // 하늘: 기본 회색 또는 노을 텍스처
+    if (_skyShader)
+    {
+        float normalSkyColor[4] =
+        {
+            0.4f, 0.4f, 0.4f, 1.f
+        };
+
+        auto skyColor =
+            _skyShader->GetVector("SkyColor");
+
+        if (skyColor && skyColor->IsValid())
+        {
+            skyColor->SetFloatVector(normalSkyColor);
+        }
+
+        auto useTexture =
+            _skyShader->GetScalar("UseSkyTexture");
+
+        if (useTexture && useTexture->IsValid())
+        {
+            useTexture->SetFloat(
+                _sunsetActive ? 1.f : 0.f
+            );
+        }
+    }
+
+    // 안개: 기존 색상 유지
+    if (_mapShader)
+    {
+        float fogColor[4] =
+        {
+            0.4f, 0.4f, 0.4f, 1.f
+        };
+
+        if (_sunsetActive)
+        {
+            fogColor[0] = 0.58f;
+            fogColor[1] = 0.45f;
+            fogColor[2] = 0.25f;
+        }
+
+        auto fog =
+            _mapShader->GetVector("FogColor");
+
+        if (fog && fog->IsValid())
+        {
+            fog->SetFloatVector(fogColor);
+        }
+    }
+}
+
+void TownScene::OnDoorTransitionCompleted(const std::wstring& triggerName, const std::string& defaultBGM)
+{
+    auto& sound = SoundManager::Get();
+
+    // =========================
+    // CLD3 처치 이후의 음악 규칙
+    // =========================
+    if (_cld3Defeated)
+    {
+        _cld3MusicActive = false;
+
+        // 거리 기반 긴장 OST도 계속 무음 유지
+        _tensionActive = false;
+        sound.SetTensionActive(false, true);
+
+        // 이미 새 음악을 시작했다면 다른 문에서도 유지
+        if (_postCLD3MusicStarted)
+            return;
+
+        if (triggerName == L"DOOR_02_IN_TRIGGER")
+        {
+            _sunsetActive = true;
+            ApplyEnvironmentColors();
+
+            sound.SetBGMVolume(0.8f);
+
+            // 실제 사용할 음악 경로로 변경
+            _postCLD3MusicStarted = sound.PlayBGM(
+                "../Resources/Sounds/BGM/SH-Disc2-20-AfterAll.wav"
+            );
+        }
+        else
+        {
+            // 지정한 문을 통과하기 전에는 항상 무음
+            sound.StopBGM();
+        }
+
+        return;
+    }
+
+    // =========================
+    // CLD3 처치 이전의 기존 규칙
+    // =========================
+    _cld3MusicActive =
+        (triggerName == L"DOOR_05_IN_TRIGGER");
+
+    if (_cld3MusicActive)
+    {
+        _tensionActive = false;
+        sound.SetTensionActive(false, true);
+
+        sound.SetBGMVolume(0.75f);
+
+        sound.PlayBGM(
+            "../Resources/Sounds/BGM/"
+            "SH-Disc2-02-ANewForm.wav"
+        );
+
+        return;
+    }
+
+    // 일반 구역 BGM
+    sound.SetBGMVolume(0.35f);
+
+    if (!defaultBGM.empty())
+    {
+        sound.PlayBGM(defaultBGM);
+    }
+    else
+    {
+        sound.StopBGM();
+    }
+}
+
+void TownScene::OnCLD3Defeated()
+{
+    //if (_cld3Defeated)
+    //    return;
+    //
+    //_cld3Defeated = true;
+    //
+    //// 다른 구역의 일반 음악은 끄지 않음
+    //if (_cld3MusicActive)
+    //{
+    //    auto& sound = SoundManager::Get();
+    //
+    //    sound.StopBGM();
+    //
+    //    _tensionActive = false;
+    //    sound.SetTensionActive(false, true);
+    //}
+
+    if (_cld3Defeated)
+        return;
+
+    _cld3Defeated = true;
+    _cld3MusicActive = false;
+    _postCLD3MusicStarted = false;
+
+    auto& sound = SoundManager::Get();
+
+    sound.StopBGM();
+
+    _tensionActive = false;
+    sound.SetTensionActive(false, true);
 }

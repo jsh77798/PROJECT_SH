@@ -55,7 +55,7 @@ public:
 	InstanceID GetInstanceID();
 	TweenDesc& GetTweenDesc() { return _tweenDesc; }
 
-	void Play(string animName);
+	void Play(string animName, float speedMultiplier = 1.f);
 	bool IsAnimationFinished();
 	bool GetAnimationProgress(
 		const string& animName,

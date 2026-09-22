@@ -17,6 +17,17 @@ public:
 
     void Update() override;
 
+    using TransitionCallback = std::function<void(
+        const std::wstring&,
+        const std::string&
+        )>;
+
+    void SetOnTransitionCompleted(
+        TransitionCallback callback)
+    {
+        _onTransitionCompleted = callback;
+    }
+
 private:
     enum class Phase
     {
@@ -40,6 +51,8 @@ private:
 
         // 비어 있으면 열쇠가 필요 없는 문
         std::string requiredKey;
+
+        std::wstring triggerName;
     };
 
     bool IsInside(
@@ -54,6 +67,8 @@ private:
         bool destinationIndoor,
         const std::string& openSound,
         const std::string& requiredKey);
+
+
 
 private:
     weak_ptr<Player> _player;
@@ -73,4 +88,6 @@ private:
 
     // 출구에서 벗어날 때까지 재사용 불가
     bool _waitUntilOutside = false;
+
+    TransitionCallback _onTransitionCompleted;
 };

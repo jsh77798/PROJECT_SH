@@ -10,6 +10,7 @@
 #include "OBBBoxCollider.h"
 #include "HealthComponent.h"
 #include "CharacterMovement.h"
+#include "SoundManager.h"
 
 Enemy::Enemy()
 {
@@ -209,12 +210,20 @@ void Enemy::LieDown()
 
 void Enemy::Attack()
 {
+    if (IsActionLocked())
+        return;
+
     if (!CanAttack())
         return;
 
     // 공격 애니메이션이 없으면 시작하지 않음
     if (!PlayState(EnemyState::Attack))
         return;
+
+    if (!_attackSound.empty())
+    {
+        SoundManager::Get().PlaySFX(_attackSound);
+    }
 
     _previousAttackProgress = 0.f;
     _attackHitApplied = false;
@@ -378,6 +387,20 @@ void Enemy::Hit(const Vec3& attackerPosition)
 
 void Enemy::Death()
 {
+    //if (IsDead())
+    //    return;
+    //
+    //CancelAttack();
+    //
+    //_hasDeathAnimation =
+    //    PlayState(EnemyState::Dead);
+    //
+    //SoundManager::Get().PlaySFX(_deathSound);
+    //
+    //// 사망 애니메이션 유무와 관계없이 사망 상태 확정
+    //_state = EnemyState::Dead;
+    //_stateInitialized = true;
+
     if (IsDead())
         return;
 
@@ -386,9 +409,17 @@ void Enemy::Death()
     _hasDeathAnimation =
         PlayState(EnemyState::Dead);
 
-    // 사망 애니메이션 유무와 관계없이 사망 상태 확정
+    SoundManager::Get().PlaySFX(_deathSound);
+
+    // 먼저 사망 상태 확정
     _state = EnemyState::Dead;
     _stateInitialized = true;
+
+    // 상태 확정 후 한 번 알림
+    auto callback = _onDeathEvent;
+
+    if (callback)
+        callback();
 }
 
 void Enemy::Update()

@@ -62,7 +62,14 @@ void Pipe::Attack()
     BoundingSphere hitSphere;
 
     // 일단 파이프 오브젝트 원점을 중심으로 검사
-    hitSphere.Center = GetTransform()->GetPosition();
+    //hitSphere.Center = GetTransform()->GetPosition();
+    //hitSphere.Radius = _hitRadius;
+    Vec3 hitCenter = GetTransform()->GetPosition();
+
+    // 월드 좌표 기준으로 타격 판정을 아래로 이동
+    hitCenter.y -= 0.5f;
+
+    hitSphere.Center = hitCenter;
     hitSphere.Radius = _hitRadius;
 
     for (const auto& object :

@@ -358,9 +358,22 @@ bool SoundManager::LoadTensionBGM(const std::string& path)
     return true;
 }
 
-void SoundManager::SetTensionActive(bool active)
+void SoundManager::SetTensionActive(bool active, bool immediate)
 {
     _tensionTarget = active ? 1.f : 0.f;
+
+    if (immediate)
+    {
+        _tensionFade = _tensionTarget;
+
+        if (_tensionBGM)
+        {
+            ma_sound_set_volume(
+                &_tensionBGM->sound,
+                _tensionVolume * _tensionFade
+            );
+        }
+    }
 }
 
 void SoundManager::SetTensionVolume(float volume)

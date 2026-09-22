@@ -73,6 +73,41 @@ public:
             _state == EnemyState::Thanatosis;
     }
 
+public:
+    float GetTensionEnterRange() const
+    {
+        return _tensionEnterRange;
+    }
+
+    float GetTensionLeaveRange() const
+    {
+        return _tensionLeaveRange;
+    }
+
+    bool CanTriggerTensionMusic() const
+    {
+        // 누운 Idle, 누운 피격 등도 제외
+        if (_isLying)
+            return false;
+
+        switch (_state)
+        {
+        case EnemyState::LieDown:
+        case EnemyState::Thanatosis:
+        case EnemyState::WakeUp:
+        case EnemyState::Dead:
+            return false;
+
+        default:
+            return true;
+        }
+    }
+
+    void SetOnDeathEvent(std::function<void()> callback)
+    {
+        _onDeathEvent = callback;
+    }
+
     bool CanAttack() const;
 
     void SetDamage(float damage) { _damage = damage; }
@@ -107,7 +142,7 @@ protected:
     bool _attackHitApplied = false;
 
     // 공격 종료 또는 취소 후 대기 시간
-    float _attackCooldown = 0.45f;
+    float _attackCooldown = 0.75f;
     float _attackCooldownRemaining = 0.f;
 
     // 공격 판정 구: 캐릭터 원점을 기준으로 월드 단위
@@ -121,8 +156,8 @@ protected:
     bool _isLying = false;
     EnemyState _stateAfterLieDown = EnemyState::Idle;
 
-    float _thanatosisHealthRatio = 0.2f;
-    float _thanatosisDuration = 5.f;
+    float _thanatosisHealthRatio = 0.3f;
+    float _thanatosisDuration = 20.f;
     float _thanatosisTimer = 0.f;
     bool _hasUsedThanatosis = false;
     float _thanatosisWakeRange = 5.f;
@@ -136,5 +171,12 @@ protected:
 
     // 피격 전에 일어나거나 눕는 중이었는지 기억
     EnemyState _stateBeforeHit = EnemyState::Idle;
+
+    string _attackSound;
+    string _deathSound;
+    float _tensionEnterRange = 15.f;
+    float _tensionLeaveRange = 17.f;
+
+    std::function<void()> _onDeathEvent;
 };
 

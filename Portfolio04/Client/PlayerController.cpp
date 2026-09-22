@@ -20,8 +20,7 @@ void PlayerController::Update()
         return;
 
     // 문 전환 중 이동·회전·공격 입력 차단
-    if (movement->IsMovementPaused() ||
-        _player->IsActionLocked())
+    if (movement->IsMovementPaused())
     {
         movement->ClearMovementInput();
         return;

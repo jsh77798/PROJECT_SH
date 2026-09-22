@@ -66,6 +66,9 @@ void Player::Init()
 	model->ReadAnimation(ASSIMP->AnimImporter(L"HarryMason/HarryMason_Move2.fbx"));
 	model->ReadAnimation(ASSIMP->AnimImporter(L"HarryMason/HarryMason_BackMove.fbx"));
 	model->ReadAnimation(ASSIMP->AnimImporter(L"HarryMason/HarryMason_Attack1.fbx"));
+	model->ReadAnimation(ASSIMP->AnimImporter(L"HarryMason/HarryMason_PipeCombo01.fbx"));
+	model->ReadAnimation(ASSIMP->AnimImporter(L"HarryMason/HarryMason_PipeCombo02.fbx"));
+	model->ReadAnimation(ASSIMP->AnimImporter(L"HarryMason/HarryMason_PipeCombo03.fbx"));
 	model->ReadAnimation(ASSIMP->AnimImporter(L"HarryMason/HarryMason_PipeAttack1.fbx"));
 	model->ReadAnimation(ASSIMP->AnimImporter(L"HarryMason/HarryMason_Hit.fbx"));
 	//////////////////////////////////////////////////////////////////////
@@ -104,7 +107,10 @@ void Player::Init()
 	_animMap[PlayerState::BackMove] = animator->MakeAnimData("BackMove", model->FindAnimation(L"HarryMason/HarryMason_BackMove"));
 	_animMap[PlayerState::Run] = animator->MakeAnimData("Run", model->FindAnimation(L"HarryMason/HarryMason_Move2"));
 	_animMap[PlayerState::KickAttack] = animator->MakeAnimData("KickAttack", model->FindAnimation(L"HarryMason/HarryMason_Attack1"), false);
-	_animMap[PlayerState::PipeAttack] = animator->MakeAnimData("PipeAttack", model->FindAnimation(L"HarryMason/HarryMason_PipeAttack1"), false);
+	_pipeCombos[0].animation = animator->MakeAnimData("PipeCombo01",model->FindAnimation(L"HarryMason/HarryMason_PipeCombo01"),false);
+	_pipeCombos[1].animation = animator->MakeAnimData("PipeCombo02",model->FindAnimation(L"HarryMason/HarryMason_PipeCombo02"),false);
+	_pipeCombos[2].animation = animator->MakeAnimData("PipeCombo03",model->FindAnimation(L"HarryMason/HarryMason_PipeCombo03"),false);
+	_animMap[PlayerState::PipeAttack] = _pipeCombos[0].animation;
 	_animMap[PlayerState::Hit] = animator->MakeAnimData("Hit", model->FindAnimation(L"HarryMason/HarryMason_Hit"), false);
 
 	// Camera
@@ -145,11 +151,110 @@ void Player::Init()
 
 void Player::Update()
 {
+	//GameObject::Update();
+	//
+	//UpdateFootsteps();
+	//
+	//// 피격 상태 처리
+	//if (_state == PlayerState::Hit)
+	//{
+	//	if (auto movement = GetCharacterMovement())
+	//		movement->ClearMovementInput();
+	//
+	//	if (!_modelObject)
+	//		return;
+	//
+	//	auto animator = _modelObject->GetModelAnimator();
+	//
+	//	if (!animator)
+	//		return;
+	//
+	//	float hitProgress = 0.f;
+	//
+	//	// Hit 애니메이션의 진행률까지 확인한 뒤 종료
+	//	if (animator->GetAnimationProgress("Hit", hitProgress))
+	//	{
+	//		if (hitProgress >= 0.99f &&
+	//			animator->IsAnimationFinished())
+	//		{
+	//			ChangeState(PlayerState::Idle);
+	//		}
+	//	}
+	//
+	//	return;
+	//}
+	//
+	//if (!IsAttacking())
+	//	return;
+	//
+	//if (!_modelObject)
+	//	return;
+	//
+	//auto animator = _modelObject->GetModelAnimator();
+	//
+	//if (!animator)
+	//	return;
+	//
+	//const PlayerState attackState = _state;
+	//
+	//auto it = _animMap.find(attackState);
+	//
+	//if (it == _animMap.end())
+	//	return;
+	//
+	//const bool isKick =
+	//	attackState == PlayerState::KickAttack;
+	//
+	//const float hitStart =
+	//	isKick ? _kickHitStart : _attackHitStart;
+	//
+	//const float hitEnd =
+	//	isKick ? _kickHitEnd : _attackHitEnd;
+	//
+	//float progress = 0.f;
+	//
+	//if (animator->GetAnimationProgress(it->second, progress))
+	//{
+	//	const bool crossedHitWindow =
+	//		progress >= _previousAttackProgress &&
+	//		progress >= hitStart &&
+	//		_previousAttackProgress <= hitEnd;
+	//
+	//	// 데미지 콜백 실행 전에 진행률 저장
+	//	_previousAttackProgress = progress;
+	//
+	//	if (crossedHitWindow)
+	//	{
+	//		if (isKick)
+	//		{
+	//			ApplyKickDamage();
+	//		}
+	//		else if (_weapon)
+	//		{
+	//			_weapon->Attack();
+	//		}
+	//	}
+	//}
+	//
+	//// 데미지 처리 과정에서 상태가 변경되었다면 덮어쓰지 않음
+	//if (_state != attackState)
+	//	return;
+	//
+	//if (animator->IsAnimationFinished())
+	//{
+	//	if (_weapon)
+	//		_weapon->EndAttack();
+	//
+	//	_kickTarget.reset();
+	//	_kickHitDone = false;
+	//
+	//	ChangeState(PlayerState::Idle);
+	//}
+
 	GameObject::Update();
 
 	UpdateFootsteps();
 
-	// 피격 상태 처리
 	if (_state == PlayerState::Hit)
 	{
 		if (auto movement = GetCharacterMovement())
@@ -165,8 +270,9 @@ void Player::Update()
 
 		float hitProgress = 0.f;
 
-		// Hit 애니메이션의 진행률까지 확인한 뒤 종료
-		if (animator->GetAnimationProgress("Hit", hitProgress))
+		if (animator->GetAnimationProgress(
+			"Hit",
+			hitProgress))
 		{
 			if (hitProgress >= 0.99f &&
 				animator->IsAnimationFinished())
@@ -178,8 +284,36 @@ void Player::Update()
 		return;
 	}
 
-	if (!IsAttacking())
+	UpdateAttack();
+}
+
+void Player::ChangeState(PlayerState state)
+{
+	//if (_state == state)
+	//	return;
+	//
+	//_state = state;
+	//
+	//if (_modelObject)
+	//{
+	//	auto animator =
+	//		_modelObject->GetModelAnimator();
+	//
+	//	if (animator)
+	//	{
+	//		//animator->SetLoop(
+	//		//	state != PlayerState::Dead);
+	//
+	//		animator->Play(_animMap[state]);
+	//	}
+	//}
+	if (_state == state)
 		return;
+
+	if (IsAttacking())
+		ResetAttack();
+
+	_state = state;
 
 	if (!_modelObject)
 		return;
@@ -189,83 +323,12 @@ void Player::Update()
 	if (!animator)
 		return;
 
-	const PlayerState attackState = _state;
+	auto it = _animMap.find(state);
 
-	auto it = _animMap.find(attackState);
-
-	if (it == _animMap.end())
+	if (it == _animMap.end() || it->second.empty())
 		return;
 
-	const bool isKick =
-		attackState == PlayerState::KickAttack;
-
-	const float hitStart =
-		isKick ? _kickHitStart : _attackHitStart;
-
-	const float hitEnd =
-		isKick ? _kickHitEnd : _attackHitEnd;
-
-	float progress = 0.f;
-
-	if (animator->GetAnimationProgress(it->second, progress))
-	{
-		const bool crossedHitWindow =
-			progress >= _previousAttackProgress &&
-			progress >= hitStart &&
-			_previousAttackProgress <= hitEnd;
-
-		// 데미지 콜백 실행 전에 진행률 저장
-		_previousAttackProgress = progress;
-
-		if (crossedHitWindow)
-		{
-			if (isKick)
-			{
-				ApplyKickDamage();
-			}
-			else if (_weapon)
-			{
-				_weapon->Attack();
-			}
-		}
-	}
-
-	// 데미지 처리 과정에서 상태가 변경되었다면 덮어쓰지 않음
-	if (_state != attackState)
-		return;
-
-	if (animator->IsAnimationFinished())
-	{
-		if (_weapon)
-			_weapon->EndAttack();
-
-		_kickTarget.reset();
-		_kickHitDone = false;
-
-		ChangeState(PlayerState::Idle);
-	}
-}
-
-void Player::ChangeState(PlayerState state)
-{
-	if (_state == state)
-		return;
-
-	_state = state;
-
-	if (_modelObject)
-	{
-		auto animator =
-			_modelObject->GetModelAnimator();
-
-		if (animator)
-		{
-			//animator->SetLoop(
-			//	state != PlayerState::Dead);
-
-			animator->Play(_animMap[state]);
-		}
-	}
+	animator->Play(it->second);
 }
 
 void Player::Move()
@@ -320,8 +383,58 @@ void Player::Stop()
 
 void Player::Attack()
 {
-	if (IsActionLocked())
-		return;
+	//if (IsActionLocked())
+	//	return;
+	//
+	//auto movement = GetCharacterMovement();
+	//auto health = GetHealthComponent();
+	//
+	//if (!movement || movement->IsMovementPaused())
+	//	return;
+	//
+	//if (!health || health->IsDead())
+	//	return;
+	//
+	//if (!_modelObject || !_modelObject->GetModelAnimator())
+	//	return;
+	//
+	//auto target = FindKickTarget();
+	//
+	//if (target)
+	//{
+	//	auto it = _animMap.find(PlayerState::KickAttack);
+	//
+	//	if (it != _animMap.end() && !it->second.empty())
+	//	{
+	//		_kickTarget = target;
+	//		_kickHitDone = false;
+	//		_previousAttackProgress = 0.f;
+	//
+	//		movement->ClearMovementInput();
+	//
+	//		// 파이프 판정이 남지 않도록 종료
+	//		if (_weapon)
+	//			_weapon->EndAttack();
+	//
+	//		ChangeState(PlayerState::KickAttack);
+	//		return;
+	//	}
+	//}
+	//
+	//// 기존 파이프 공격
+	//if (!_weapon)
+	//	return;
+	//
+	//_kickTarget.reset();
+	//_kickHitDone = false;
+	//_previousAttackProgress = 0.f;
+	//
+	//movement->ClearMovementInput();
+	//
+	//_weapon->BeginAttack();
+	//ChangeState(PlayerState::PipeAttack);
+	//
+	//SoundManager::Get().PlaySFX("PipeSwing");
 
 	auto movement = GetCharacterMovement();
 	auto health = GetHealthComponent();
@@ -332,9 +445,24 @@ void Player::Attack()
 	if (!health || health->IsDead())
 		return;
 
-	if (!_modelObject || !_modelObject->GetModelAnimator())
+	// 공격 중 추가 클릭은 다음 공격 예약으로 처리
+	if (_state == PlayerState::PipeAttack)
+	{
+		QueueNextCombo();
+		return;
+	}
+
+	// 발차기·피격·사망 상태에서는 새 공격 금지
+	if (IsActionLocked())
 		return;
 
+	if (!_modelObject ||
+		!_modelObject->GetModelAnimator())
+	{
+		return;
+	}
+
+	// 첫 공격을 시작할 때만 발차기 대상 검사
 	auto target = FindKickTarget();
 
 	if (target)
@@ -343,35 +471,19 @@ void Player::Attack()
 
 		if (it != _animMap.end() && !it->second.empty())
 		{
+			ResetAttack();
+
 			_kickTarget = target;
-			_kickHitDone = false;
-			_previousAttackProgress = 0.f;
 
 			movement->ClearMovementInput();
-
-			// 파이프 판정이 남지 않도록 종료
-			if (_weapon)
-				_weapon->EndAttack();
 
 			ChangeState(PlayerState::KickAttack);
 			return;
 		}
 	}
 
-	// 기존 파이프 공격
-	if (!_weapon)
-		return;
-
-	_kickTarget.reset();
-	_kickHitDone = false;
-	_previousAttackProgress = 0.f;
-
-	movement->ClearMovementInput();
-
-	_weapon->BeginAttack();
-	ChangeState(PlayerState::PipeAttack);
-
-	SoundManager::Get().PlaySFX("PipeSwing");
+	// 발차기 대상이 없으면 파이프 1타 시작
+	BeginPipeCombo(0);
 }
 
 void Player::TryPickupKey()
@@ -444,12 +556,13 @@ void Player::Hit()
 		return;
 
 	// 진행 중인 공격 중단
-	if (_weapon)
-		_weapon->EndAttack();
-
-	_kickTarget.reset();
-	_kickHitDone = false;
-	_previousAttackProgress = 0.f;
+	//if (_weapon)
+	//	_weapon->EndAttack();
+	//
+	//_kickTarget.reset();
+	//_kickHitDone = false;
+	//_previousAttackProgress = 0.f;
+	ResetAttack();
 
 	if (auto movement = GetCharacterMovement())
 		movement->ClearMovementInput();
@@ -800,5 +913,245 @@ void Player::ApplyKickDamage()
 	);
 
 	SoundManager::Get().PlaySFX("PipeHit");
+}
+
+bool Player::BeginPipeCombo(int index)
+{
+	if (index < 0 ||
+		index >= static_cast<int>(_pipeCombos.size()))
+	{
+		return false;
+	}
+
+	auto movement = GetCharacterMovement();
+	auto health = GetHealthComponent();
+
+	if (!movement || movement->IsMovementPaused())
+		return false;
+
+	if (!health || health->IsDead())
+		return false;
+
+	if (!_weapon || !_modelObject)
+		return false;
+
+	auto animator = _modelObject->GetModelAnimator();
+
+	if (!animator)
+		return false;
+
+	const auto& combo = _pipeCombos[index];
+
+	if (combo.animation.empty())
+		return false;
+
+	// 이전 타격 기록과 예약을 초기화
+	ResetAttack();
+
+	_comboIndex = index;
+
+	movement->ClearMovementInput();
+
+	// 각 타격마다 별도의 공격으로 시작
+	_weapon->BeginAttack();
+
+	// 1~3타 모두 같은 상태를 사용하므로 직접 재생
+	// ChangeState()는 같은 상태라면 return하기 때문
+	_state = PlayerState::PipeAttack;
+	animator->Play(
+		combo.animation,
+		_pipeAttackSpeed
+	);
+
+	return true;
+}
+
+void Player::QueueNextCombo()
+{
+	if (_state != PlayerState::PipeAttack)
+		return;
+
+	// 3타에서는 추가 공격을 예약하지 않음
+	if (_comboIndex < 0 ||
+		_comboIndex >=
+		static_cast<int>(_pipeCombos.size()) - 1)
+	{
+		return;
+	}
+
+	if (_comboQueued || !_modelObject)
+		return;
+
+	auto animator = _modelObject->GetModelAnimator();
+
+	if (!animator)
+		return;
+
+	float progress = 0.f;
+
+	if (!animator->GetAnimationProgress(
+		_pipeCombos[_comboIndex].animation,
+		progress))
+	{
+		return;
+	}
+
+	if (progress < _comboInputStart ||
+		progress > _comboInputEnd)
+	{
+		return;
+	}
+
+	// 여러 번 클릭해도 다음 1타만 예약
+	_comboQueued = true;
+}
+
+void Player::UpdateAttack()
+{
+	if (!IsAttacking())
+		return;
+
+	auto health = GetHealthComponent();
+
+	if (!health || health->IsDead())
+	{
+		ResetAttack();
+		return;
+	}
+
+	if (auto movement = GetCharacterMovement())
+		movement->ClearMovementInput();
+
+	if (!_modelObject)
+		return;
+
+	auto animator = _modelObject->GetModelAnimator();
+
+	if (!animator)
+		return;
+
+	const PlayerState attackState = _state;
+	const int attackIndex = _comboIndex;
+
+	const bool isKick =
+		attackState == PlayerState::KickAttack;
+
+	string animationName;
+	float hitStart = 0.f;
+	float hitEnd = 0.f;
+	float soundProgress = 0.f;
+
+	if (isKick)
+	{
+		auto it = _animMap.find(PlayerState::KickAttack);
+
+		if (it == _animMap.end() || it->second.empty())
+			return;
+
+		animationName = it->second;
+		hitStart = _kickHitStart;
+		hitEnd = _kickHitEnd;
+	}
+	else
+	{
+		if (_comboIndex < 0 ||
+			_comboIndex >=
+			static_cast<int>(_pipeCombos.size()))
+		{
+			ChangeState(PlayerState::Idle);
+			return;
+		}
+
+		const auto& combo = _pipeCombos[_comboIndex];
+
+		animationName = combo.animation;
+		hitStart = combo.hitStart;
+		hitEnd = combo.hitEnd;
+		soundProgress = combo.soundProgress;
+	}
+
+	float progress = 0.f;
+
+	// 현재 공격 애니메이션이 확인된 경우에만 진행
+	// 전환 중인 이전 애니메이션의 종료를 오인하지 않도록 함
+	if (!animator->GetAnimationProgress(
+		animationName,
+		progress))
+	{
+		return;
+	}
+
+	const float previous = _previousAttackProgress;
+	_previousAttackProgress = progress;
+
+	// 파이프 휘두르는 소리: 각 타격에서 한 번
+	if (!isKick &&
+		!_attackSoundPlayed &&
+		progress >= soundProgress)
+	{
+		_attackSoundPlayed = true;
+
+		SoundManager::Get().PlaySFX("PipeSwing");
+	}
+
+	// 프레임이 타격 구간을 건너뛰어도 한 번 검사
+	const bool crossedHitWindow =
+		progress >= previous &&
+		progress >= hitStart &&
+		previous <= hitEnd;
+
+	if (crossedHitWindow)
+	{
+		if (isKick)
+		{
+			ApplyKickDamage();
+		}
+		else if (_weapon)
+		{
+			_weapon->Attack();
+		}
+	}
+
+	// 데미지 콜백에서 피격 등으로 상태가 바뀌었다면 중단
+	if (_state != attackState ||
+		_comboIndex != attackIndex)
+	{
+		return;
+	}
+
+	// 현재 공격이 끝날 때까지 대기
+	if (progress < 0.99f ||
+		!animator->IsAnimationFinished())
+	{
+		return;
+	}
+
+	// 다음 공격이 예약되어 있으면 Idle을 거치지 않고 연결
+	if (!isKick &&
+		_comboQueued &&
+		_comboIndex + 1 <
+		static_cast<int>(_pipeCombos.size()))
+	{
+		const int nextIndex = _comboIndex + 1;
+
+		if (BeginPipeCombo(nextIndex))
+			return;
+	}
+
+	ChangeState(PlayerState::Idle);
+}
+
+void Player::ResetAttack()
+{
+	if (_weapon)
+		_weapon->EndAttack();
+
+	_comboIndex = -1;
+	_comboQueued = false;
+	_attackSoundPlayed = false;
+	_previousAttackProgress = 0.f;
+
+	_kickTarget.reset();
+	_kickHitDone = false;
 }
 
